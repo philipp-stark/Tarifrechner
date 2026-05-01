@@ -85,6 +85,21 @@ main.results{padding:22px 28px;min-width:0}
 .field input[type="date"]{min-height:38px}
 .field input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .field input[type="date"]::-webkit-datetime-edit{text-align:left;padding:0}
+/* Manche Browser zeigen im leeren Date-Input das heutige Datum oder ein
+   "tt.mm.jjjj"-Schema als ausgegrauten Platzhalter. Über `required` wird ein
+   leeres Feld zu :invalid – wir machen es dann textlich komplett unsichtbar.
+   Beim Fokus oder mit gültigem Wert kommt die Anzeige zurück. */
+.field input[type="date"]:invalid:not(:focus){
+  color:transparent;
+}
+.field input[type="date"]:invalid:not(:focus)::-webkit-datetime-edit,
+.field input[type="date"]:invalid:not(:focus)::-webkit-datetime-edit-fields-wrapper,
+.field input[type="date"]:invalid:not(:focus)::-webkit-datetime-edit-text,
+.field input[type="date"]:invalid:not(:focus)::-webkit-datetime-edit-day-field,
+.field input[type="date"]:invalid:not(:focus)::-webkit-datetime-edit-month-field,
+.field input[type="date"]:invalid:not(:focus)::-webkit-datetime-edit-year-field{
+  color:transparent;opacity:0;
+}
 .field input:focus{border-color:var(--text-2)}
 .field .hint{font-size:11.5px;color:var(--text-muted);margin-top:4px}
 .field.invalid input{border-color:var(--neg)}
@@ -108,7 +123,7 @@ main.results{padding:22px 28px;min-width:0}
 .card .tariff-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px}
 .card .tariff-title{font-size:15px;font-weight:600;margin-bottom:14px}
 .card .ablauf-label{font-size:11.5px;color:var(--text-muted);margin-bottom:2px}
-.card .ablauf-value{font-size:24px;font-weight:600;color:var(--accent-customer);letter-spacing:-.01em;margin-bottom:14px}
+.card .ablauf-value{font-size:31px;font-weight:600;color:var(--accent-customer);letter-spacing:-.01em;margin-bottom:14px}
 .card .row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;font-size:13px;border-bottom:1px solid var(--line)}
 .card .row:last-of-type{border-bottom:none}
 .card .row .lbl{color:var(--text-muted)}
@@ -220,6 +235,15 @@ table.detail .rump{color:var(--text-muted);font-size:11px;font-weight:400;margin
 .hints-body .hint-item:first-child{margin-top:0;padding-top:0;border-top:none}
 .hints-body strong{color:var(--text);font-weight:600}
 .hints-body em{font-style:italic;color:var(--text)}
+.hints-body p{margin:0 0 10px 0}
+.hints-body p:last-child{margin-bottom:0}
+.hints-body ul{margin:0 0 10px 0;padding-left:18px}
+.hints-body ul li{margin-bottom:4px}
+.hints-body .m-intro{margin-bottom:14px}
+.hints-body .m-step{margin-top:14px}
+.hints-body .m-step:first-of-type{margin-top:0}
+.hints-body .m-step h5{font-size:13.5px;font-weight:600;margin:0 0 6px 0;color:var(--text)}
+.hints-body .m-step h5 em{font-style:italic}
 
 /* Toolbar im Header */
 .toolbar button{background:#fff;border:1px solid var(--line-strong);color:var(--text);padding:7px 12px;font:inherit;font-size:12.5px;border-radius:6px;cursor:pointer}
@@ -281,15 +305,15 @@ table.detail .rump{color:var(--text-muted);font-size:11px;font-weight:400;margin
     border-top:0.4pt solid #999}
   .card details.cost-detail > summary{display:none}
   .card details.cost-detail > .cost-list{display:block !important}
-  .card .cost-list{margin-top:1mm;font-size:8.5pt}
-  .card .cost-list .item{padding:1.5mm 0;border-bottom:0.3pt solid #CCC;
+  .card .cost-list{margin-top:1mm;font-size:7pt}
+  .card .cost-list .item{padding:1.2mm 0;border-bottom:0.3pt solid #CCC;
     break-inside:avoid;page-break-inside:avoid}
   .card .cost-list .item:last-child{border-bottom:none}
-  .card .cost-list .item .name{display:block;margin-bottom:0.8mm}
-  .card .cost-list .item .name .title-text{font-weight:600;display:block}
+  .card .cost-list .item .name{display:block;margin-bottom:0.6mm}
+  .card .cost-list .item .name .title-text{font-weight:600;display:block;font-size:7pt}
   .card .cost-list .item .name .rate{color:#444;font-weight:500;
-    font-variant-numeric:tabular-nums;display:block;font-size:8pt;margin-top:0.5mm}
-  .card .cost-list .item .desc{color:#444;font-size:8pt;line-height:1.4;margin-top:0}
+    font-variant-numeric:tabular-nums;display:block;font-size:6.5pt;margin-top:0.4mm}
+  .card .cost-list .item .desc{color:#444;font-size:6.5pt;line-height:1.35;margin-top:0}
   .card .cost-list .item .desc strong{color:#1A1A1A;font-weight:600;white-space:nowrap}
 
   /* Vergleichs-Block: eigene Seite nach den vier Tarifkarten,
@@ -342,31 +366,52 @@ table.detail .rump{color:var(--text-muted);font-size:11px;font-weight:400;margin
     display:block;margin:1px 0 0 0;font-size:6pt;color:#666;font-weight:400
   }
 
-  /* Hinweise zur Berechnung – im Druck immer aufgeklappt, eigene Seite ganz am Ende */
+  /* Hinweise zur Berechnung – im Druck immer aufgeklappt, eigene Seite am Ende.
+     Die Methodik ist zu lang für eine einzige Seite. Mit echten <p>-Absätzen
+     und <section class="m-step"> für jede Methodik-Sub-Section gibt der Browser
+     saubere Umbruchpunkte; Sub-Überschriften (<h5>) werden nicht von ihrem
+     Folgetext getrennt, einzelne m-step-Blöcke bleiben in sich zusammen. */
   .hints{break-before:page;page-break-before:always;margin-bottom:0}
   .hints details{background:none;border:none;border-radius:0;box-shadow:none;overflow:visible}
   .hints summary{display:none}
-  .hints-body{padding:0;font-size:9.5pt;line-height:1.4;color:#1A1A1A}
-  .hints-body .hint-item{margin-top:5mm;padding-top:3mm;border-top:0.4pt solid #BBB;
-    break-inside:avoid;page-break-inside:avoid}
+  .hints-body{padding:0;font-size:7.5pt;line-height:1.45;color:#1A1A1A;
+    orphans:3;widows:3;text-align:left}
+  .hints-body .hint-item{margin-top:3.5mm;padding-top:2mm;border-top:0.4pt solid #BBB}
   .hints-body .hint-item:first-child{margin-top:0;padding-top:0;border-top:none}
-  .hints-body strong,
+  /* Kurze Items (Rentenbeginn, Honorar vs. Provision) bleiben am Stück. Die
+     Methodik darf umbrechen, aber kontrolliert (siehe m-step). */
+  .hints-body .hint-item:nth-of-type(1),
+  .hints-body .hint-item:nth-of-type(2){break-inside:avoid;page-break-inside:avoid}
+  /* Absätze und Listen: kompaktes Spacing, keine Witwen/Waisen-Splittung. */
+  .hints-body p{margin:0 0 1.5mm 0;orphans:3;widows:3}
+  .hints-body p:last-child{margin-bottom:0}
+  .hints-body ul{margin:0 0 1.5mm 0;padding-left:4mm}
+  .hints-body ul li{margin-bottom:0.5mm;break-inside:avoid;page-break-inside:avoid}
+  /* Methodik-Sub-Sections: jeder m-step bleibt nach Möglichkeit in sich zusammen,
+     wenn er auf eine Seite passt; ist er zu lang, bricht er an Absatzgrenzen. */
+  .hints-body .m-intro{margin-bottom:3mm;break-after:avoid;page-break-after:avoid}
+  .hints-body .m-step{margin-top:3mm;break-inside:avoid-page;page-break-inside:avoid}
+  .hints-body .m-step:first-of-type{margin-top:0}
+  .hints-body .m-step h5{font-size:8.5pt;font-weight:600;margin:0 0 1mm 0;
+    break-after:avoid;page-break-after:avoid;color:#1A1A1A}
+  .hints-body .m-step h5 em{font-style:italic;color:#1A1A1A}
+  .hints-body strong{color:#1A1A1A;font-weight:600}
   .hints-body em{color:#1A1A1A}
-  .hints h2{font-size:13pt;margin-bottom:4mm}
+  .hints h2{font-size:11pt;margin-bottom:3mm;break-after:avoid;page-break-after:avoid}
 
   /* Berechnungsgrundlage – ebenfalls einspaltig, eigene Seite */
   .print-only{display:block}
   .print-basis{break-before:page;page-break-before:always;padding:0;
     border-top:0.4pt solid #1A1A1A;padding-top:6mm;margin-top:0}
-  .print-basis h2{font-size:13pt;margin-bottom:2mm}
-  .print-basis .sub{font-size:9pt;color:#444;margin-bottom:5mm}
-  .basis-grid{display:block;font-size:10pt}
+  .print-basis h2{font-size:12pt;margin-bottom:2mm}
+  .print-basis .sub{font-size:8pt;color:#444;margin-bottom:5mm}
+  .basis-grid{display:block;font-size:8.5pt}
   .basis-grid .row{display:flex;justify-content:space-between;
-    border-bottom:0.4pt solid #BBB;padding:2mm 0;break-inside:avoid;page-break-inside:avoid}
+    border-bottom:0.4pt solid #BBB;padding:1.5mm 0;break-inside:avoid;page-break-inside:avoid}
   .basis-grid .row .lbl{color:#444}
   .basis-grid .row .val{font-weight:600;font-variant-numeric:tabular-nums}
-  .basis-grid .group-title{font-size:9pt;text-transform:uppercase;letter-spacing:.06em;
-    color:#444;margin:4mm 0 1mm 0;border-bottom:none;padding:0}
+  .basis-grid .group-title{font-size:7.5pt;text-transform:uppercase;letter-spacing:.06em;
+    color:#444;margin:3mm 0 1mm 0;border-bottom:none;padding:0}
   .basis-context{font-size:9pt;color:#333;margin-top:6mm;padding-top:3mm;
     border-top:0.4pt solid #BBB;line-height:1.4}
   .print-footer{margin-top:6mm;font-size:8pt;color:#666;text-align:right}
@@ -510,7 +555,7 @@ body.auth-locked > *:not(.auth-gate){visibility:hidden}
       <h4>Vertrag</h4>
       <div class="field" id="f-geburt">
         <label for="geburt">Geburtsdatum</label>
-        <input id="geburt" type="date">
+        <input id="geburt" type="date" autocomplete="off" required>
       </div>
       <div class="field" id="f-rente">
         <label for="rente">Renteneintrittsalter</label>
@@ -697,19 +742,205 @@ body.auth-locked > *:not(.auth-gate){visibility:hidden}
             weil ein großer Teil der Lücke zwischen Honorar- und Provisionstarif schon durch die
             wiederkehrenden Zuzahlungen geschlossen wird.
           </div>
-          <div class="hint-item">
-            <strong>Methodik:</strong> Schleife mit monatlich genauer Vertragslaufzeit – inklusive Rumpfjahr
-            bei nicht durch 12 teilbarer Restlaufzeit. Sparraten kommen am Anfang jedes Monats (BoP)
-            und wachsen mit (1+rendite)^(1/12). Anfangsguthaben und ggf. Einmalbeiträge wachsen über die
-            tatsächlichen Vertragsmonate. Am Jahresende werden alle Kosten vom Brutto-Endwert abgezogen:
-            beitragsbezogen (FR10: AVK 2,5 % der BWS, monatsgenau auf 60 Vertragsmonate verteilt,
-            Verwaltung 6,30 % in Jahr 1–5 / 8,30 % ab Jahr 6, 24 EUR Stückkosten; FB / FE / H:
-            36 EUR fixe Verwaltung) sowie guthabenbezogen (FR10 0,24 %, FB 1,10 %, FE 1,30 %, H 0,30 %)
-            und die TER-Fondskostenquote – jeweils auf das Anfangsguthaben des Jahres. BWS = monatliche
-            Sparrate × Vertragsmonate, gedeckelt auf 480 Monate (40 Jahre). Effektivkosten via IRR-Bisektion
-            gegen eine kostenfreie Vergleichsanlage mit identischem Beitragsmodell. Break-Even-Honorar:
-            numerische Bisektion über 0–200.000 EUR. Whitelabel-Tool ohne Beratungsempfehlung – alle Werte
-            sind Modellrechnungen.
+          <div class="hint-item m-item">
+            <p class="m-intro"><strong>Methodik – So wird gerechnet (Schritt für Schritt):</strong></p>
+
+            <section class="m-step">
+              <h5><em>1) Grundprinzip: Jahr für Jahr, mit monatsgenauer Verzinsung</em></h5>
+              <p>Der Rechner geht den Vertrag <strong>Jahr für Jahr</strong> durch. Innerhalb jedes
+              Jahres wird aber <strong>monatsgenau</strong> verzinst und gespart: die monatliche
+              Sparrate (z.&nbsp;B. 100&nbsp;€) wird ganz am Anfang jedes Monats eingezahlt – Fachleute
+              nennen das "BoP" (Beginning of Period). Beim FR10-Provisionstarif wird der prozentuale
+              Verwaltungskostenanteil <strong>direkt vom Monatsbeitrag einbehalten</strong>:
+              Bei 6,30&nbsp;% Verwaltungskosten und 100&nbsp;€ Sparrate fließen also 6,30&nbsp;€ als
+              Verwaltungskosten zur Gesellschaft und nur 93,70&nbsp;€ kommen ins Depot. Erst dieser
+              Restbetrag wächst dann mit der monatlichen Wachstumsrate.</p>
+              <p>Aus 7&nbsp;%&nbsp;p.&nbsp;a. werden (1 + 0,07)<sup>1/12</sup> − 1 ≈ 0,565&nbsp;% pro
+              Monat. Das bereits vorhandene Guthaben (plus etwaige Einmalbeiträge zu Jahresbeginn)
+              wächst entsprechend über die ganze Anzahl Monate dieses Jahres.</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>2) Was monatlich und was am Jahresende passiert</em></h5>
+              <p><strong>Pro Monat</strong> wird die Sparrate (z.&nbsp;B. 100&nbsp;€) zerlegt:</p>
+              <ul>
+                <li>Beitragskosten gehen <em>direkt vom Beitrag</em> ab und kommen erst gar nicht ins Depot:
+                FR10-Verwaltung (% des Beitrags), monatliche AVK (FR10, in den ersten 60 Monaten),
+                Stückkosten (FR10) bzw. Fix-Verwaltung (FB/FE/H).</li>
+                <li>Nur der Rest – die "Netto-Sparrate" – fließt als BoP-Einzahlung ins Depot.</li>
+              </ul>
+              <p><strong>Außerdem werden monatlich direkt vom Depotbestand</strong> abgezogen:</p>
+              <ul>
+                <li>die <strong>guthabenabhängigen Verwaltungskosten</strong> – jeweils monatlicher
+                Satz (= jährlicher Satz / 12) auf den <em>Bestand am Ende des Vormonats</em>,</li>
+                <li>die <strong>TER-Fondskosten</strong> – nach demselben Verfahren auf den Vormonatsbestand.</li>
+              </ul>
+              <p><strong>Bei Einmalbeiträgen / Zuzahlungen (FR10)</strong>: die 6&nbsp;% Zuzahlungskosten
+              (4&nbsp;% AVK + 2&nbsp;% übrige) werden bereits bei der Einzahlung einbehalten – nur die
+              verbleibenden 94&nbsp;% wandern als Netto-Anlage ins Depot.</p>
+              <p><strong>Am Jahresende</strong> finden keine zusätzlichen Kostenabzüge mehr statt –
+              alle Kosten sind bereits unterjährig verrechnet. Der Wert am Jahresende ist also
+              unmittelbar das Anfangsguthaben für das nächste Jahr. So entsteht eine Kette aus 42
+              oder 43 Jahresbausteinen, in der jedes Jahr auf dem vorherigen aufbaut. Genau diese
+              Werte sehen Sie in der Detail-Tabelle Jahr für Jahr.</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>3) Welche Kosten beim FR10 (Provisionstarif) abgezogen werden</em></h5>
+              <p><strong>Wichtig:</strong> Die ersten drei Posten (AVK, Verwaltung, Stückkosten)
+              werden alle <strong>direkt vom Monatsbeitrag einbehalten</strong>, bevor überhaupt
+              Geld ins Depot fließt. Daraus folgt: in den ersten 5 Vertragsjahren landet beim
+              FR10 oft weniger als 75&nbsp;% der Sparrate als investiertes Kapital im Depot – der
+              Rest geht direkt für Vermittlungs- und Verwaltungskosten weg. Der berühmte
+              "Wertverlust in den Anfangsjahren" der Provisionsverträge entsteht genau dadurch:
+              der Endwert nach Kosten liegt im 5-Jahres-Zeitfenster meist deutlich unter den
+              eingezahlten Beiträgen.</p>
+              <ul>
+                <li><strong>Abschluss- und Vertriebskosten (AVK):</strong> 2,5&nbsp;% der BWS,
+                gleichmäßig auf die ersten 60&nbsp;Vertragsmonate (= 5&nbsp;Jahre) verteilt. Beispiel:
+                BWS 48.000&nbsp;€ → 1.200&nbsp;€ Gesamt-AVK → <strong>20&nbsp;€ pro Vertragsmonat</strong>
+                in Jahr 1–5, danach 0. Wird vom Monatsbeitrag einbehalten.</li>
+                <li><strong>Verwaltungskosten:</strong> 6,30&nbsp;% des Beitrags in Jahr 1–5, danach
+                8,30&nbsp;%. Bei 100&nbsp;€/Mo also <strong>6,30&nbsp;€/Mo</strong> (J1–5) bzw.
+                <strong>8,30&nbsp;€/Mo</strong> (ab J6). Vom Monatsbeitrag einbehalten.</li>
+                <li><strong>Stückkosten:</strong> 24&nbsp;€&nbsp;p.&nbsp;a. = <strong>2&nbsp;€/Mo</strong>,
+                fester Betrag unabhängig von der Sparrate. Vom Monatsbeitrag einbehalten.</li>
+              </ul>
+              <p><strong>Beispiel J1, 100&nbsp;€&nbsp;Sparrate:</strong> 100 − 20 − 6,30 − 2 =
+              71,70&nbsp;€/Mo werden tatsächlich investiert. 71,70 × 12 = 860,40&nbsp;€ im ersten
+              Jahr (vs. 1.200&nbsp;€ eingezahlt). Erst auf diesen Betrag wirken Wachstum und die
+              nachfolgend genannten Guthaben-/TER-Kosten.</p>
+              <ul>
+                <li><strong>Guthabenkosten (laufend):</strong> 0,24&nbsp;%&nbsp;p.&nbsp;a. →
+                0,02&nbsp;% pro Monat, jeweils auf den <strong>Bestand am Ende des Vormonats</strong>.
+                Werden Monat für Monat direkt vom Depot abgezogen.</li>
+                <li><strong>TER-Fondskosten:</strong> die hier eingegebene Fondskostenquote, nach
+                demselben Verfahren monatlich auf den Vormonatsbestand.</li>
+                <li><strong>Zuzahlungskosten:</strong> bei jedem Einmalbeitrag oder jeder Zuzahlung
+                werden 6&nbsp;% einmalig fällig (4&nbsp;% AVK + 2&nbsp;% übrige Kosten).</li>
+              </ul>
+            </section>
+
+            <section class="m-step">
+              <h5><em>4) Welche Kosten bei FBFR10 / FEFR10 / HFR10 (Nettotarife / Honorartarif)</em></h5>
+              <p>Diese Tarife haben <strong>keine AVK</strong>. Stattdessen:</p>
+              <ul>
+                <li>Fixe Verwaltungskosten: 36&nbsp;€&nbsp;p.&nbsp;a. (= 3&nbsp;€/Monat). Werden ebenfalls
+                direkt von jedem Monatsbeitrag einbehalten, statt am Jahresende.</li>
+                <li><strong>Guthabenkosten</strong>: <strong>FBFR10 1,10&nbsp;%&nbsp;p.&nbsp;a.</strong>,
+                <strong>FEFR10 1,30&nbsp;%&nbsp;p.&nbsp;a.</strong>,
+                <strong>HFR10 0,30&nbsp;%&nbsp;p.&nbsp;a.</strong> Werden – wie beim FR10 – Monat für
+                Monat auf den Vormonatsbestand abgezogen (jährlicher Satz / 12 pro Monat).</li>
+                <li>TER-Fondskosten zusätzlich, ebenfalls monatlich auf den Vormonatsbestand.</li>
+              </ul>
+            </section>
+
+            <section class="m-step">
+              <h5><em>5) BWS – das &raquo;Maßband&laquo; für AVK und Provision</em></h5>
+              <p>Die "Bewertungssumme" (BWS) ist der Maßstab, an dem AVK und Vermittlerprovision
+              berechnet werden. Sie ergibt sich aus <strong>Monatliche Sparrate × Vertragsmonate</strong>,
+              wird aber bei <strong>480&nbsp;Monaten (= 40&nbsp;Jahren)</strong> gedeckelt. Beispiel:
+              100&nbsp;€/Mo × 42&nbsp;J × 12&nbsp;Mo = 50.400&nbsp;€, gedeckelt auf 100 × 480 = 48.000&nbsp;€.
+              Versicherer rechnen also auch bei sehr langen Verträgen nicht mehr als 40&nbsp;Jahre für
+              die Provisions-/AVK-Basis.</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>6) Rumpfjahr – wenn die Laufzeit nicht durch 12 teilbar ist</em></h5>
+              <p>Beispiel: Vertragsdauer 42&nbsp;Jahre und 11&nbsp;Monate. Das letzte Jahr hat dann
+              nur 11 statt 12 Monate. Da im Modell sowieso alles monatsgenau gerechnet wird, ist
+              das Rumpfjahr unkritisch: es laufen einfach nur 11 (statt 12) Monatsschritte durch
+              die Schleife. Pro Schritt werden Sparrate, Beitragskosten (Verwaltung, AVK,
+              Stückkosten/Fix-Verwaltung), guthabenabhängige Kosten und TER ganz normal
+              verarbeitet. Bei nicht-ganzer Restmonatszahl (z.&nbsp;B. 11,5&nbsp;Monate) wird der
+              Bruchteil-Monat zusätzlich mit Anteilsfaktor abgerechnet.</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>7) Vermittlervergütung im FR10</em></h5>
+              <ul>
+                <li><strong>Abschluss-Vorauszahlung Jahr 1:</strong> Promille der BWS (z.&nbsp;B.
+                45&nbsp;‰ entsprechen 4,5&nbsp;% der BWS, also bei BWS 48.000&nbsp;€ → 2.160&nbsp;€).
+                Diese Provision wird im Modell vollständig im Jahr 1 als Vermittler-Cashflow
+                gebucht.</li>
+                <li><strong>Bestandsprovision (jährlich):</strong> der eingegebene Prozentsatz
+                (typisch 1&nbsp;%) auf den jährlich geleisteten Beitrag (nicht auf das Guthaben).</li>
+                <li><strong>Auf Zuzahlungen:</strong> einmalig 4&nbsp;% Vermittlerprovision bei
+                jeder Zuzahlung.</li>
+              </ul>
+              <p><em>Hinweis:</em> Eine reale 5-jährige Stornohaftung des Vermittlers wird im
+              Tool <strong>nicht abgebildet</strong> – es geht davon aus, dass der Vertrag
+              durchläuft.</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>8) Vermittlervergütung im HFR10</em></h5>
+              <p>Im Honorartarif fließen <strong>keine</strong> Provisionen aus dem Vertrag an
+              den Vermittler. Stattdessen zahlt der Kunde direkt:</p>
+              <ul>
+                <li>Ein <strong>einmaliges Honorar</strong> (Höhe wird hier eingegeben).</li>
+                <li>Optional ein <strong>jährliches Betreuungshonorar</strong>, ebenfalls aus
+                dem Privatvermögen.</li>
+              </ul>
+              <p>Beide Beträge mindern <strong>nicht</strong> das Endkapital des Vertrags – sie
+              sind externe Zahlungen.</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>9) Effektivkosten p.&nbsp;a. – wie viel Rendite kosten die Kosten?</em></h5>
+              <p>Die Effektivkosten zeigen an, wie viel jährliche Rendite Ihnen die Kosten
+              "wegfressen". Berechnet wird das so: Wir rechnen aus, mit welcher fiktiven Rendite
+              ein <strong>kostenfreier</strong> Vergleichssparplan mit derselben Sparrate und
+              Laufzeit genau auf das tatsächliche Endkapital käme. Diese fiktive Rendite heißt
+              r_eff. Die Effektivkosten sind dann ganz einfach:
+              <strong>Brutto-Wertentwicklung − r_eff</strong>.</p>
+              <p>Beispiel: Bei 7&nbsp;% Wertentwicklung und einem Endkapital, das einem fiktiven
+              kostenfreien Sparplan mit 5,85&nbsp;% entspricht, betragen die Effektivkosten
+              1,15&nbsp;%&nbsp;p.&nbsp;a. Die Suche nach r_eff erfolgt per <strong>Bisektion</strong>
+              – das Programm probiert systematisch Renditen zwischen −50&nbsp;% und +100&nbsp;%
+              durch und halbiert das Suchfenster in jedem Schritt, bis es genau passt (bis auf
+              0,00001&nbsp;% genau).</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>10) Break-Even-Honorar – ab wann lohnt sich Honorar gegenüber Provision?</em></h5>
+              <p>Das Break-Even-Honorar ist der Wert, bei dem das Endkapital im Honorartarif
+              HFR10 <strong>genauso hoch</strong> ist wie das Endkapital im Provisionstarif FR10,
+              wenn das gesparte Honorar dort als Zuzahlung angelegt wird. Auch das findet das
+              Programm per Bisektion: Es testet Honorare zwischen 0&nbsp;€ und 200.000&nbsp;€ und
+              sucht den Wert, an dem beide Endkapitale exakt zusammenfallen.</p>
+              <p>Wichtig: Wenn ein <strong>jährliches Betreuungshonorar</strong> eingegeben ist,
+              wird dieses fairerweise jedes Jahr als wiederkehrende Zuzahlung in den FR10
+              eingebracht (mit den gleichen 6&nbsp;% Zuzahlungskosten wie sonst auch). Wegen
+              Zinseszins über die Vertragslaufzeit kann das den Break-Even spürbar nach unten
+              drücken.</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>11) TER und die "Netto-Wertentwicklung"</em></h5>
+              <p><strong>Wichtig:</strong> Intern rechnet das Tool mit der
+              <em>Brutto</em>-Wertentwicklung (z.&nbsp;B. 7,00&nbsp;%). Die TER wird
+              <strong>nicht</strong> vorab von der Rendite abgezogen, sondern wie eine ganz
+              normale guthabenabhängige Kostenposition behandelt: Sie wird
+              <strong>monatlich</strong> auf den Bestand am Ende des Vormonats berechnet
+              (jährlicher Satz / 12) und vom Depot abgezogen – ganz analog zu den
+              Police-Guthabenkosten.</p>
+              <p>Die Zeile <em>"Netto-Wertentwicklung nach Fondskosten"</em> in der
+              Berechnungsgrundlage ist nur eine <strong>informative Anzeige</strong> nach der
+              Formel (Brutto − TER), z.&nbsp;B. 7,00&nbsp;% − 0,34&nbsp;% = 6,66&nbsp;%. Sie zeigt,
+              wie hoch die Rendite wäre, wenn man die TER pauschal von der Brutto-Rendite abzieht
+              – im Modell selbst wirkt sie aber nicht als Renditeminderung, sondern als laufender
+              EUR-Kostenposten.</p>
+            </section>
+
+            <section class="m-step">
+              <h5><em>12) Was das Tool nicht ersetzt</em></h5>
+              <p>Es handelt sich um ein <strong>Whitelabel-Vergleichstool für Modellrechnungen</strong>.
+              Es ersetzt keine individuelle Beratung, keinen verbindlichen Tarifvergleich des
+              Versicherers und keine Steuerberechnung. Alle Werte beruhen auf den hier eingegebenen
+              Annahmen (insbesondere der konstanten Wertentwicklung, die in der Realität schwankt)
+              und auf den im Quelltext hinterlegten Tarif-Parametern.</p>
+            </section>
           </div>
         </div>
       </details>
@@ -885,61 +1116,118 @@ function berechneTarif(tarifId, nMonate, monatlich, einmal, rendite, opts){
     const beitragJahr = monatlich * monateImJahr + einmalbetragJahr;
     einzahlungenSumme += beitragJahr;
 
-    // Aufgeschlüsselte Beitragskosten – auch in die Detail-Tabelle übernommen.
-    let abschlusskosten = 0;       // AVK regulär + AVK auf Zuzahlung (FR10)
-    let verwaltungJaehrlich = 0;   // % am Beitrag (FR10) bzw. übrige 2 % auf Zuzahlung
-    let stueckkosten = 0;          // fixe EUR-Kosten p.a. an Gesellschaft
+    // FR10-Verwaltungssatz pro Beitrag (6,30 % J1–5, danach 8,30 %). Wird direkt
+    // pro Monatsbeitrag abgezogen, sodass nur der Rest tatsächlich investiert wird.
+    const verwSatzFR10 = (tarifId === "FR10")
+      ? ((j <= t.avkJahre) ? t.verwaltungJ1_5 : t.verwaltungAb6)
+      : 0;
+    // Monatliche Stückkosten / Fix-Verwaltung – werden ebenfalls vom Monatsbeitrag
+    // einbehalten, NICHT als Klumpen am Jahresende. Bei FR10 = 24 EUR/J → 2 EUR/Mo,
+    // bei FB/FE/H = 36 EUR/J → 3 EUR/Mo.
+    const stueckProMonat = (tarifId === "FR10")
+      ? t.stueckkostenJahr / 12
+      : t.fixVerwaltungJahr / 12;
+    // Monatliche AVK pro Vertragsmonat (nur FR10) – wirkt nur in den ersten
+    // avkMonateGesamt (= 60) Vertragsmonaten. Wird ebenfalls vom Monatsbeitrag
+    // einbehalten, was dazu führt, dass im Provisionstarif in den ersten 5 Jahren
+    // erheblich weniger Geld investiert wird als der Kunde einzahlt.
+    const avkProMonatFR10ImJahr = (tarifId === "FR10") ? avkProMonatFR10 : 0;
 
-    if(tarifId === "FR10"){
-      // AVK-Monate, die in dieses Iterationsjahr fallen (max. 60 Vertragsmonate insgesamt).
-      const avkMonateInDiesemJahr = Math.max(0,
-        Math.min(avkMonateGesamt, monateBisJahresende) - Math.min(avkMonateGesamt, monateVorJahr)
-      );
-      abschlusskosten = avkProMonatFR10 * avkMonateInDiesemJahr;
-      // Verwaltungskosten gestaffelt: 6,30 % in Jahr 1–5, danach 8,30 %.
-      const verwSatz = (j <= t.avkJahre) ? t.verwaltungJ1_5 : t.verwaltungAb6;
-      // Beitragsbezogene Kosten skalieren automatisch mit Beitrag, der im
-      // Rumpfjahr ohnehin nur die anteiligen Monate enthält.
-      verwaltungJaehrlich = monatlich * monateImJahr * verwSatz;
-      stueckkosten = t.stueckkostenJahr * anteil;
-      if(einmalbetragJahr > 0){
-        // 6 % Zuzahlungskosten auf jeden Lump-Sum-Zufluss (einmal + jährliche Zuzahlung).
-        abschlusskosten     += einmalbetragJahr * t.zuzahlungAVK;       // 4 % auf Zuzahlung
-        verwaltungJaehrlich += einmalbetragJahr * t.zuzahlungUebrige;   // 2 % übrige Kosten
-      }
-    } else {
-      // FBFR10 / FEFR10 / HFR10 – nur fixe Verwaltungskosten an Gesellschaft, anteilig.
-      stueckkosten = t.fixVerwaltungJahr * anteil;
-    }
-    const kostenBeitrag = abschlusskosten + verwaltungJaehrlich + stueckkosten;
+    // Aufgeschlüsselte Beitragskosten – werden in der Monatsschleife unten
+    // akkumuliert und in die Detail-Tabelle übernommen.
+    let abschlusskosten = 0;       // ∑ monatliche AVK + Zuzahlungs-AVK
+    let verwaltungJaehrlich = 0;   // ∑ monatliche Verwaltung + Zuzahlungs-Übrige
+    let stueckkosten = 0;          // ∑ monatliche Stückkosten / Fix-Verwaltung
+    // Zuzahlungskosten (4 % AVK + 2 % übrige) werden direkt bei Einzahlung
+    // einbehalten – nur der Netto-Rest des Einmalbeitrags fließt ins Depot.
+    let zuzahlungskostenJahr = 0;
     let advisorAbschlussZuzahlung = 0;
+
     if(tarifId === "FR10" && einmalbetragJahr > 0){
+      const zuzahlungAVK     = einmalbetragJahr * t.zuzahlungAVK;       // 4 %
+      const zuzahlungUebrige = einmalbetragJahr * t.zuzahlungUebrige;   // 2 %
+      abschlusskosten        += zuzahlungAVK;
+      verwaltungJaehrlich    += zuzahlungUebrige;
+      zuzahlungskostenJahr   = zuzahlungAVK + zuzahlungUebrige;
       advisorAbschlussZuzahlung = einmalbetragJahr * t.bestandszuzahlung; // 4 % Vermittler
     }
 
+    // Netto-Einmalbetrag, der nach Abzug der 6 % Zuzahlungskosten ins Depot wandert.
+    // Bei Nicht-FR10-Tarifen gibt es keine Zuzahlungskosten → einmalNettoJahr = einmalbetragJahr.
+    const einmalNettoJahr = einmalbetragJahr - zuzahlungskostenJahr;
+
     const guthabenStart = guthaben;
-    // Monatliche Verzinsung – im Rumpfjahr nur über monateImJahr Monate.
-    const wachstumsfaktor = Math.pow(1 + rm, monateImJahr);
-    const startGewachsen = (guthabenStart + einmalbetragJahr) * wachstumsfaktor;
-    let saldoMonatlich = 0;
+    // Monatliche Sätze für guthabenabhängige Kosten + TER. Konvention: jährlicher
+    // Satz / 12, abgezogen jeden Monat auf den Bestand am Ende des vorigen Monats.
+    const terPa = (opts.terPa != null ? opts.terPa : 0);
+    const kGuthabenM = t.guthabenkostenPa / 12;
+    const kFondsM    = terPa / 12;
+
+    // Eine einzige Monatsschleife trackt das Depot laufend. Reihenfolge pro Monat:
+    //   1. Beitragskosten (Verwaltung, AVK, Stückkosten) vom Monatsbeitrag abziehen
+    //      → nur der Rest ("Netto-Sparrate") fließt überhaupt ins Depot.
+    //   2. Vormonatsbestand merken (= Bestand am Ende des vorigen Monats)
+    //   3. Guthabenabhängige Kosten + TER auf Vormonatsbestand abziehen
+    //   4. Netto-Sparrate als BoP zufügen
+    //   5. Mit monatlichem Faktor verzinsen → ergibt den neuen Monatsendstand
+    // Der Einmalbeitrag/Zuzahlungsbetrag wandert NETTO (nach Abzug der 6 %
+    // Zuzahlungskosten) gleich zu Jahresbeginn ins Depot und ist ab Monat 1
+    // voll Teil des Vormonatsbestands.
+    let depot = guthabenStart + einmalNettoJahr;
+    let guthabenkosten = 0;
+    let fondskosten = 0;
+
     const ganzeMonate = Math.floor(monateImJahr);
     const restMonat = monateImJahr - ganzeMonate;
+
+    // Hilfsfunktion: berechne pro Monatsschritt die Beitragskosten
+    // (Verwaltung, AVK, Stückkosten) und buche sie auf die Anzeige-Sammler.
+    // Liefert die Netto-Sparrate, die wirklich investiert wird.
+    const verarbeiteMonat = (vertragsMonatNr, faktor) => {
+      const istInAvkPhase = (tarifId === "FR10") && (vertragsMonatNr <= avkMonateGesamt);
+      const avkM    = (istInAvkPhase ? avkProMonatFR10ImJahr : 0) * faktor;
+      const verwM   = monatlich * verwSatzFR10 * faktor;
+      const stueckM = stueckProMonat * faktor;
+      abschlusskosten     += avkM;
+      verwaltungJaehrlich += verwM;
+      stueckkosten        += stueckM;
+      return monatlich * faktor - avkM - verwM - stueckM;
+    };
+
     for(let m = 0; m < ganzeMonate; m++){
-      saldoMonatlich = (saldoMonatlich + monatlich) * (1 + rm);
+      const nettoSparrate = verarbeiteMonat(monateVorJahr + m + 1, 1);
+      const vormonat = depot;
+      const gkM = vormonat * kGuthabenM;
+      const fkM = vormonat * kFondsM;
+      guthabenkosten += gkM;
+      fondskosten   += fkM;
+      depot = (vormonat - gkM - fkM + nettoSparrate) * (1 + rm);
     }
     if(restMonat > 0){
-      // Bruchteil eines Monats: anteilige Sparrate, anteiliges Wachstum.
-      saldoMonatlich = (saldoMonatlich + monatlich * restMonat) * (1 + rm * restMonat);
+      // Bruchteil eines Monats: alle Komponenten jeweils anteilig.
+      const nettoSparrate = verarbeiteMonat(monateVorJahr + ganzeMonate + 1, restMonat);
+      const vormonat = depot;
+      const gkM = vormonat * kGuthabenM * restMonat;
+      const fkM = vormonat * kFondsM    * restMonat;
+      guthabenkosten += gkM;
+      fondskosten   += fkM;
+      depot = (vormonat - gkM - fkM + nettoSparrate) * (1 + rm * restMonat);
     }
-    const bruttoEnd = startGewachsen + saldoMonatlich;
-    const wertzuwachs = bruttoEnd - guthabenStart - beitragJahr;
+    // bruttoEnd = Depotwert am Jahresende NACH allen monatlichen Abzügen
+    // (Beitragskosten, guthabenabh. Kosten, TER). Da auch die Zuzahlungskosten
+    // bereits beim Jahresanfangs-Zufluss einbehalten wurden, gibt es keine
+    // separaten Jahres-Endabzüge mehr → bruttoEnd ≡ guthabenEnd.
+    const bruttoEnd = depot;
+    // Wertzuwachs = Veränderung des Depotwerts über das Jahr abzüglich des
+    // tatsächlich ins Depot geflossenen Kapitals. "Geflossen" ist:
+    //   - der Netto-Anteil der Sparraten (= monatlich*monateImJahr − monatliche
+    //     Beitragskosten dieses Jahres) PLUS
+    //   - der Netto-Einmalbeitrag (= Brutto − Zuzahlungskosten).
+    const beitragsKostenMonatlSumme = abschlusskosten + verwaltungJaehrlich + stueckkosten - zuzahlungskostenJahr;
+    const investierterBetragJahr   = monatlich * monateImJahr - beitragsKostenMonatlSumme + einmalNettoJahr;
+    const wertzuwachs              = bruttoEnd - guthabenStart - investierterBetragJahr;
 
-    // Guthabenkosten und TER auf Anfangsguthaben – im Rumpfjahr anteilig.
-    const guthabenkosten = guthabenStart * t.guthabenkostenPa * anteil;
-    const terPa = (opts.terPa != null ? opts.terPa : 0);
-    const fondskosten = guthabenStart * terPa * anteil;
-
-    const guthabenEnd = bruttoEnd - kostenBeitrag - guthabenkosten - fondskosten;
+    const guthabenEnd = bruttoEnd;
     guthaben = guthabenEnd;
 
     // Beratervergütung pro Jahr
@@ -960,8 +1248,11 @@ function berechneTarif(tarifId, nMonate, monatlich, einmal, rendite, opts){
       }
       bestandSumme += bestandJahr;
     } else if(tarifId === "FBFR10" || tarifId === "FEFR10"){
-      // Vermittleranteil der Guthabenkosten – auf Anfangsguthaben, anteilig im Rumpfjahr.
-      const bestandJahr = guthabenStart * t.guthabenkostenBerater * anteil;
+      // Vermittleranteil der guthabenabhängigen Kosten: gleicher monatlicher Verlauf
+      // wie die total abgezogenen Guthabenkosten, gewichtet mit dem Vermittler-Anteil
+      // (z.B. FBFR10: 0,80 % von 1,10 % p.a. → ~73 % der total deduzierten Kosten).
+      const beraterAnteil = t.guthabenkostenBerater / t.guthabenkostenPa;
+      const bestandJahr = guthabenkosten * beraterAnteil;
       bestandSumme += bestandJahr;
       advisorJahr = bestandJahr;
     } else if(tarifId === "HFR10"){
@@ -976,6 +1267,11 @@ function berechneTarif(tarifId, nMonate, monatlich, einmal, rendite, opts){
       }
     }
 
+    // kostenBeitrag im Jahres-Eintrag = Summe aller Beitragskosten des Jahres
+    // (für Abwärtskompatibilität der Detail-Tabelle). Diese Summe entspricht dem,
+    // was im Lauf des Jahres an Beitragskosten realisiert wurde – egal ob
+    // monatlich (regulär) oder am Jahresende (Zuzahlungs-Anteil).
+    const kostenBeitrag = abschlusskosten + verwaltungJaehrlich + stueckkosten;
     jahre.push({
       jahr:j, monateImJahr, monatlich, beitragJahr,
       abschlusskosten, verwaltungJaehrlich, guthabenkosten, stueckkosten, fondskosten,
@@ -1262,32 +1558,32 @@ function kostenstrukturHtml(id, e, r){
     items.push({
       name: "Abschluss- und Vertriebskosten (AVK)",
       rate: `${fmtPct(t.avkAnteil,1)} der BWS · monatsgenau über ${avkMonate} Vertragsmonate`,
-      desc: `BWS = ${fmtEUR2.format(bws)} → <strong>${fmtEUR2.format(avkProMonat)}</strong> pro Vertragsmonat in den ersten ${t.avkJahre} Jahren ≙ <strong>${fmtEUR2.format(avkJahr)}</strong> in einem vollen Jahr, danach 0 EUR.`
+      desc: `BWS = ${fmtEUR2.format(bws)} → <strong>${fmtEUR2.format(avkProMonat)}</strong> werden in den ersten ${t.avkJahre} Jahren <strong>direkt von jedem Monatsbeitrag einbehalten</strong> (zusammen mit Verwaltungs- und Stückkosten), danach 0 EUR. Pro Jahr kumuliert: <strong>${fmtEUR2.format(avkJahr)}</strong>. Folge: in den ersten 5 Jahren fließt deutlich weniger ins Depot, als der Kunde einzahlt.`
     });
     items.push({
-      name: "Jährliche Verwaltungskosten",
+      name: "Verwaltungskosten (auf Beitrag)",
       rate: `${fmtPct(t.verwaltungJ1_5,2)} (J1–5) · ${fmtPct(t.verwaltungAb6,2)} (ab J6)`,
-      desc: `Bei aktuellem Jahresbeitrag von ${fmtEUR2.format(jb)}: <strong>${fmtEUR2.format(jb*t.verwaltungJ1_5)}</strong> p.a. in Jahr 1–5, danach <strong>${fmtEUR2.format(jb*t.verwaltungAb6)}</strong> p.a.`
+      desc: `Werden direkt von jedem Monatsbeitrag einbehalten – bei ${fmtEUR2.format(e.monatlich)}/Mo also <strong>${fmtEUR2.format(e.monatlich*t.verwaltungJ1_5)}</strong>/Mo in J1–5 bzw. <strong>${fmtEUR2.format(e.monatlich*t.verwaltungAb6)}</strong>/Mo ab J6. Nur der Rest fließt ins Depot. P.a. kumuliert: <strong>${fmtEUR2.format(jb*t.verwaltungJ1_5)}</strong> bzw. <strong>${fmtEUR2.format(jb*t.verwaltungAb6)}</strong>.`
     });
     items.push({
       name: "Stückkosten",
-      rate: `${fmtEUR2.format(t.stueckkostenJahr)} fix p.a.`,
-      desc: `Unabhängig von der Sparrate, durchgehend über die gesamte Laufzeit.`
+      rate: `${fmtEUR2.format(t.stueckkostenJahr)} p.a. (= ${fmtEUR2.format(t.stueckkostenJahr/12)} pro Monat)`,
+      desc: `Werden direkt von jedem Monatsbeitrag einbehalten – unabhängig von der Sparrate, durchgehend über die gesamte Laufzeit.`
     });
     items.push({
       name: "Guthabenabhängige Verwaltungskosten",
-      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a.`,
-      desc: `Auf das Anfangsguthaben des Jahres. Komplett an Gesellschaft (keine Beratervergütung über das Guthaben).`
+      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a. (= ${fmtPct(t.guthabenkostenPa/12,4)} pro Monat)`,
+      desc: `Werden monatlich auf den Bestand am Ende des Vormonats berechnet und vom Depot abgezogen. Komplett an Gesellschaft (keine Beratervergütung über das Guthaben).`
     });
     items.push({
       name: "Fondskosten (TER)",
-      rate: `${fmtPct(e.terPa,2)} p.a.`,
-      desc: `Auf das Anfangsguthaben des Jahres. Reduziert die Wertentwicklung netto.`
+      rate: `${fmtPct(e.terPa,2)} p.a. (= ${fmtPct(e.terPa/12,4)} pro Monat)`,
+      desc: `Werden monatlich auf den Bestand am Ende des Vormonats berechnet und vom Depot abgezogen.`
     });
     items.push({
       name: "Zuzahlung / Einmalbeitrag",
       rate: `6,00 % einmalig (4 % AVK + 2 % übrige)`,
-      desc: `Auf jeden Einmalbeitrag bzw. jede Zuzahlung – einmalig im Jahr der Einzahlung. 4 % davon zusätzlich als Vermittlerprovision.`
+      desc: `Werden direkt bei der Einzahlung einbehalten – nur die übrigen 94 % wandern als Netto-Anlage ins Depot. Zusätzlich 4 % der Zuzahlung als Vermittlerprovision.`
     });
     items.push({
       name: "Beratervergütung Abschluss",
@@ -1307,19 +1603,19 @@ function kostenstrukturHtml(id, e, r){
       desc: "Keine Abschlusskosten. Auch auf Zuzahlungen fällt keine AVK an."
     });
     items.push({
-      name: "Jährliche Verwaltungskosten",
-      rate: `${fmtEUR2.format(t.fixVerwaltungJahr)} fix p.a.`,
-      desc: "Konstanter EUR-Betrag an die Gesellschaft, unabhängig von der Sparrate."
+      name: "Verwaltungskosten",
+      rate: `${fmtEUR2.format(t.fixVerwaltungJahr)} p.a. (= ${fmtEUR2.format(t.fixVerwaltungJahr/12)} pro Monat)`,
+      desc: "Werden direkt von jedem Monatsbeitrag einbehalten – konstanter EUR-Betrag an die Gesellschaft, unabhängig von der Sparrate."
     });
     items.push({
       name: "Guthabenabhängige Verwaltungskosten",
-      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a.`,
-      desc: `Auf das Anfangsguthaben des Jahres. Davon ${fmtPct(t.guthabenkostenVerwaltung,2)} Verwaltung an Gesellschaft, ${fmtPct(t.guthabenkostenBerater,2)} Beratervergütung an Vermittler.`
+      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a. (= ${fmtPct(t.guthabenkostenPa/12,4)} pro Monat)`,
+      desc: `Werden monatlich auf den Bestand am Ende des Vormonats berechnet und vom Depot abgezogen. Davon ${fmtPct(t.guthabenkostenVerwaltung,2)} Verwaltung an Gesellschaft, ${fmtPct(t.guthabenkostenBerater,2)} Beratervergütung an Vermittler.`
     });
     items.push({
       name: "Fondskosten (TER)",
-      rate: `${fmtPct(e.terPa,2)} p.a.`,
-      desc: `Auf das Anfangsguthaben des Jahres.`
+      rate: `${fmtPct(e.terPa,2)} p.a. (= ${fmtPct(e.terPa/12,4)} pro Monat)`,
+      desc: `Werden monatlich auf den Bestand am Ende des Vormonats berechnet und vom Depot abgezogen.`
     });
     items.push({
       name: "Beratervergütung",
@@ -1334,19 +1630,19 @@ function kostenstrukturHtml(id, e, r){
       desc: "Honorartarif: keine AVK auf laufende Beiträge oder Zuzahlungen."
     });
     items.push({
-      name: "Jährliche Verwaltungskosten",
-      rate: `${fmtEUR2.format(t.fixVerwaltungJahr)} fix p.a.`,
-      desc: "Konstanter EUR-Betrag an die Gesellschaft."
+      name: "Verwaltungskosten",
+      rate: `${fmtEUR2.format(t.fixVerwaltungJahr)} p.a. (= ${fmtEUR2.format(t.fixVerwaltungJahr/12)} pro Monat)`,
+      desc: "Werden direkt von jedem Monatsbeitrag einbehalten – konstanter EUR-Betrag an die Gesellschaft (Honorartarif)."
     });
     items.push({
       name: "Guthabenabhängige Verwaltungskosten",
-      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a.`,
-      desc: "Auf das Anfangsguthaben des Jahres – komplett Verwaltung an Gesellschaft."
+      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a. (= ${fmtPct(t.guthabenkostenPa/12,4)} pro Monat)`,
+      desc: "Werden monatlich auf den Bestand am Ende des Vormonats berechnet und vom Depot abgezogen – komplett Verwaltung an Gesellschaft."
     });
     items.push({
       name: "Fondskosten (TER)",
-      rate: `${fmtPct(e.terPa,2)} p.a.`,
-      desc: `Auf das Anfangsguthaben des Jahres.`
+      rate: `${fmtPct(e.terPa,2)} p.a. (= ${fmtPct(e.terPa/12,4)} pro Monat)`,
+      desc: `Werden monatlich auf den Bestand am Ende des Vormonats berechnet und vom Depot abgezogen.`
     });
     items.push({
       name: "Beratervergütung Abschluss",
@@ -1569,6 +1865,12 @@ function renderTabelle(R){
 function setIfNotEmpty(id, v){ if(v != null && v !== "") document.getElementById(id).value = v; }
 
 function initFromStorage(){
+  // Manche Browser (Safari, Chrome auf iOS) zeigen bei einem leeren date-Input
+  // den heutigen Tag als ausgegrauten Platzhalter oder restaurieren via Autofill
+  // den letzten eingegebenen Wert. Beides wirkt so, als sei das Feld bereits
+  // ausgefüllt. Wir setzen den Wert deshalb explizit auf leer, bevor irgendetwas
+  // aus localStorage geladen wird.
+  document.getElementById("geburt").value = "";
   const s = loadInputs();
   if(!s) return;
   setIfNotEmpty("geburt",   s.geburt);
