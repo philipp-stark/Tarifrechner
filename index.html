@@ -465,7 +465,18 @@ body.auth-locked > *:not(.auth-gate){visibility:hidden}
     if(eingabeHash && eingabeHash === PASSWORT_HASH){
       try { sessionStorage.setItem(KEY, "1"); } catch(_){}
       errBox.textContent = "";
+      // Tastatur einklappen + Fokus weg vom Input, damit iOS-Safari nicht
+      // die Scroll-Position des fokussierten Felds beibehält.
+      input.blur();
       unlock();
+      // Sicherstellen, dass die Seite nach dem Entsperren ganz oben startet.
+      // requestAnimationFrame wartet einen Frame, damit der Browser das
+      // Layout-Update (Gate weg, restliche Seite eingeblendet) verarbeitet hat.
+      requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
     } else {
       errBox.textContent = "Falsches Passwort.";
       input.value = "";
