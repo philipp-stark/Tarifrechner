@@ -1,0 +1,1628 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tarifrechner Fondsrente FR10</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* =====================================================================
+   Tarifrechner FR10 – Whitelabel
+   Farbsystem: Weiß, Anthrazit, Bordeaux-Rot.
+   ===================================================================== */
+:root{
+  --bg:#FFFFFF;
+  --surface:#FFFFFF;
+  --surface-2:#F5F5F5;
+  --line:#E5E5E5;
+  --line-strong:#CFCFCF;
+  --text:#1A1A1A;
+  --text-2:#2A2A2A;
+  --text-muted:#6B6B6B;
+  --accent-customer:#C1003E;     /* Bordeaux – Kundenvorteil/Ablaufleistung */
+  --accent-customer-soft:#F5D6DE;
+  --accent-advisor:#C1003E;      /* Bordeaux – Beratervergütung */
+  --accent-advisor-soft:#F5D6DE;
+  --accent-warm:#B85C3D;         /* Terracotta – sekundärer Akzent */
+  --pos:#C1003E;
+  --neg:#A23A2A;
+  --neutral:#6B6B6B;
+  --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size:14.5px;line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-weight:600;color:var(--text);margin:0}
+h1{font-size:20px;letter-spacing:-.01em}
+h2{font-size:17px;letter-spacing:-.01em}
+h3{font-size:15px;letter-spacing:-.005em}
+h4{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+small,.small{font-size:12px;color:var(--text-muted)}
+
+/* Header */
+header.app{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);
+  padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+header.app .title{display:flex;align-items:baseline;gap:14px}
+header.app .title small{color:var(--text-muted)}
+header.app .meta{font-size:12px;color:var(--text-muted)}
+header.app .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Mobile-Header: Titel einzeilig & größer, Buttons darunter gleichbreit
+   und zusammen über die volle Inhaltsbreite */
+@media (max-width: 600px){
+  header.app{flex-direction:column;align-items:stretch;padding:14px 24px;gap:12px}
+  header.app .title{width:100%}
+  header.app .title h1{font-size:22px;white-space:nowrap;letter-spacing:-.01em}
+  header.app .toolbar{display:flex;width:100%;gap:8px}
+  header.app .toolbar button{flex:1 1 0;text-align:center}
+}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:380px 1fr;gap:0;align-items:start}
+@media (max-width: 1100px){.layout{grid-template-columns:1fr}}
+
+aside.inputs{position:sticky;top:57px;align-self:start;height:calc(100vh - 57px);
+  overflow-y:auto;border-right:1px solid var(--line);padding:22px 24px;background:#fff}
+@media (max-width: 1100px){aside.inputs{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+main.results{padding:22px 28px;min-width:0}
+
+/* Eingabefelder */
+.field{margin-bottom:14px}
+.field label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-2);margin-bottom:5px;font-weight:500}
+.field input{width:100%;padding:9px 11px;border:1px solid var(--line-strong);border-radius:6px;
+  font:inherit;color:var(--text);background:#fff;outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--text-2)}
+.field .hint{font-size:11.5px;color:var(--text-muted);margin-top:4px}
+.field.invalid input{border-color:var(--neg)}
+.field.invalid .hint{color:var(--neg)}
+
+/* Tooltip Info-Icon */
+.info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  border-radius:50%;border:1px solid var(--line-strong);color:var(--text-muted);font-size:10px;
+  cursor:help;font-weight:600;line-height:1}
+.info:hover{color:var(--text);border-color:var(--text-2)}
+
+/* Sections */
+.section{margin-bottom:26px}
+.section > h4{margin-bottom:10px}
+
+/* Tarif-Karten */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+@media (max-width: 1500px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media (max-width: 700px){.cards{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.card .tariff-name{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px}
+.card .tariff-title{font-size:15px;font-weight:600;margin-bottom:14px}
+.card .ablauf-label{font-size:11.5px;color:var(--text-muted);margin-bottom:2px}
+.card .ablauf-value{font-size:24px;font-weight:600;color:var(--accent-customer);letter-spacing:-.01em;margin-bottom:14px}
+.card .row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;font-size:13px;border-bottom:1px solid var(--line)}
+.card .row:last-of-type{border-bottom:none}
+.card .row .lbl{color:var(--text-muted)}
+.card .row .val{color:var(--text);font-variant-numeric:tabular-nums;font-weight:500}
+.card .advisor{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line-strong)}
+.card .advisor h4{color:var(--accent-advisor);margin-bottom:8px;font-size:11.5px}
+.card .advisor .row .val{color:var(--accent-advisor);font-weight:600}
+.card .advisor .row.total .val{font-size:15px}
+
+/* Kostenstruktur (aufklappbar pro Tarifkarte) */
+.card details.cost-detail{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.card details.cost-detail > summary{cursor:pointer;list-style:none;font-size:11px;color:var(--text-2);
+  font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+  display:flex;align-items:center;justify-content:space-between;padding:2px 0}
+.card details.cost-detail > summary::-webkit-details-marker{display:none}
+.card details.cost-detail > summary::after{content:"▾";color:var(--text-muted);transition:transform .2s;font-size:18px;line-height:1;font-weight:400;margin-left:10px}
+.card details.cost-detail[open] > summary::after{transform:rotate(180deg)}
+.card details.cost-detail > summary:hover{color:var(--text)}
+
+.cost-list{margin-top:10px;font-size:12.5px}
+.cost-list .item{padding:11px 0;border-bottom:1px solid var(--line)}
+.cost-list .item:first-child{padding-top:4px}
+.cost-list .item:last-child{padding-bottom:2px;border-bottom:none}
+.cost-list .item .name{
+  display:block;margin-bottom:4px;line-height:1.35
+}
+.cost-list .item .name .title-text{color:var(--text);font-weight:600;display:block}
+.cost-list .item .name .rate{
+  color:var(--text-muted);font-weight:500;font-variant-numeric:tabular-nums;
+  display:block;font-size:12px;margin-top:2px
+}
+.cost-list .item .desc{color:var(--text-muted);font-size:12px;line-height:1.55;margin-top:0}
+.cost-list .item .desc strong{color:var(--text);font-weight:600;white-space:nowrap}
+.cost-list .item.none{color:var(--text-muted);font-style:italic}
+
+/* Fair-Vergleich */
+.compare{background:var(--surface);border:2px solid var(--accent-customer);border-radius:12px;padding:22px 24px;margin-bottom:26px;box-shadow:var(--shadow)}
+.compare h2{margin-bottom:4px}
+.compare .sub{color:var(--text-muted);font-size:13px;margin-bottom:18px}
+.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:18px}
+@media (max-width: 900px){.compare-grid{grid-template-columns:1fr}}
+.compare-cell{background:var(--surface-2);border-radius:8px;padding:14px 16px}
+.compare-cell .lbl{font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.compare-cell .val{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.compare-cell.diff{border:1px solid var(--accent-customer)}
+.compare-cell.diff.neg{border-color:var(--neg)}
+.compare-cell.diff .val{color:var(--accent-customer)}
+.compare-cell.diff.neg .val{color:var(--neg)}
+.compare-cell.breakeven{background:var(--accent-customer-soft);border:1px solid var(--accent-customer)}
+.compare-cell.breakeven .val{color:var(--accent-customer);font-size:24px}
+.compare-advisor{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px}
+.compare-advisor div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;min-width:0}
+.compare-advisor .lbl{color:var(--text-muted);min-width:0;overflow-wrap:anywhere}
+.compare-advisor .val{color:var(--accent-advisor);font-weight:600;font-variant-numeric:tabular-nums;flex:0 0 auto;white-space:nowrap}
+@media (max-width: 700px){
+  /* Auf schmalen Screens: einspaltig stapeln und Label oberhalb des Werts,
+     damit nichts aus der Box rausragt. */
+  .compare-advisor{grid-template-columns:1fr;gap:10px}
+  .compare-advisor div{flex-direction:column;align-items:flex-start;gap:2px}
+  .compare-advisor .val{align-self:flex-start}
+}
+
+/* Charts */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:26px}
+@media (max-width: 1100px){.charts{grid-template-columns:1fr}}
+@media (max-width: 600px){.charts{display:none}}    /* Mobil: Diagramme ausblenden */
+.chart-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
+.chart-box h3{margin-bottom:10px}
+.chart-canvas{position:relative;height:260px}
+
+/* Tabelle */
+.table-wrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);margin-bottom:24px;overflow:hidden}
+.table-wrap summary{cursor:pointer;padding:14px 18px;font-weight:600;font-size:14px;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.table-wrap summary::-webkit-details-marker{display:none}
+.table-wrap summary::after{content:"▾";color:var(--text-muted);transition:transform .2s}
+.table-wrap details[open] summary::after{transform:rotate(180deg)}
+.tbl-scroll{overflow-x:auto;border-top:1px solid var(--line)}
+table.detail{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.detail th, table.detail td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table.detail th{background:var(--surface-2);font-weight:600;color:var(--text-2);position:sticky;top:0;z-index:1}
+table.detail th:first-child, table.detail td:first-child{text-align:left}
+table.detail tr:hover td{background:var(--surface-2)}
+table.detail .rump{color:var(--text-muted);font-size:11px;font-weight:400;margin-left:4px}
+.tbl-tabs{display:flex;gap:4px;padding:10px 18px 0;background:var(--surface)}
+.tbl-tabs button{background:none;border:1px solid var(--line);border-bottom:none;padding:7px 12px;font:inherit;font-size:12.5px;
+  border-radius:6px 6px 0 0;cursor:pointer;color:var(--text-muted)}
+.tbl-tabs button.active{background:var(--surface-2);color:var(--text);font-weight:600}
+
+/* Validierungsbanner */
+.banner{background:#FBEFEC;color:var(--neg);border:1px solid #E6BFB6;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:13px}
+
+/* Hinweisbox im Eingabebereich (Rentenbeginn-Annahme) */
+.hint-box{margin-top:12px;padding:10px 12px;background:var(--surface-2);border-left:3px solid var(--accent-advisor);
+  border-radius:4px;font-size:11.5px;line-height:1.5;color:var(--text-2)}
+.hint-box strong{color:var(--text);font-weight:600}
+
+/* Hinweise zur Berechnung – aufklappbar auf der Website */
+.hints{margin-bottom:24px}
+.hints details{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  box-shadow:var(--shadow);overflow:hidden}
+.hints summary{cursor:pointer;padding:14px 18px;font-weight:600;font-size:14px;
+  list-style:none;display:flex;align-items:center;justify-content:space-between}
+.hints summary::-webkit-details-marker{display:none}
+.hints summary::after{content:"▾";color:var(--text-muted);transition:transform .2s}
+.hints details[open] summary::after{transform:rotate(180deg)}
+.hints summary:hover{color:var(--text)}
+.hints-body{padding:0 18px 16px;font-size:13px;line-height:1.5;color:var(--text-2)}
+.hints-body .hint-item{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.hints-body .hint-item:first-child{margin-top:0;padding-top:0;border-top:none}
+.hints-body strong{color:var(--text);font-weight:600}
+.hints-body em{font-style:italic;color:var(--text)}
+
+/* Toolbar im Header */
+.toolbar button{background:#fff;border:1px solid var(--line-strong);color:var(--text);padding:7px 12px;font:inherit;font-size:12.5px;border-radius:6px;cursor:pointer}
+.toolbar button:hover{background:var(--surface-2)}
+.toolbar button#btn-print{background:#C1003E;border-color:#C1003E;color:#fff}
+.toolbar button#btn-print:hover{background:#9B0030;border-color:#9B0030}
+
+/* Print-only Berechnungsgrundlage – im Bildschirm versteckt */
+.print-only{display:none}
+
+/* Print
+   --------------------------------------------------------------------
+   Layout: Alles linear untereinander – Karten, Vergleichsblock, Charts,
+   Tabelle. Jeder Block ist break-inside:avoid, damit Seitenumbrüche
+   sauber zwischen Blöcken fallen. */
+@media print{
+  @page{margin:16mm 20mm}              /* Mehr Seitenrand links/rechts, damit
+                                          Box-Borders nicht am Papierrand kleben */
+  :root{
+    --line:#999;--line-strong:#666;--surface-2:#F2F2F2;
+  }
+  html,body{background:#fff}
+  body{font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  /* Header schlank, ohne Trennlinie unter dem Titel */
+  header.app{position:static;border:none;padding:0 0 6mm 0;display:block}
+  header.app .title{display:flex;align-items:baseline;gap:10px}
+  header.app .title h1{font-size:16pt}
+  /* Bedien-Buttons (Drucken / Zurücksetzen) gehören nicht ins Druckdokument */
+  .toolbar,
+  #btn-print,
+  #btn-reset{display:none !important}
+
+  /* Layout aufheben – komplett linear */
+  .layout{display:block}
+  aside.inputs{display:none}              /* interaktives Formular ausblenden */
+  main.results{padding:0;display:block}
+
+  /* Tarif-Karten: jede Karte bekommt eine eigene Seite.
+     Erste Karte teilt sich die erste Seite mit dem Header,
+     jede weitere Karte beginnt mit einem Seitenumbruch. */
+  .cards{display:block;margin-bottom:6mm}
+  .card{padding:0;border:none;border-radius:0;
+    box-shadow:none;margin-bottom:4mm;display:block}
+  .card + .card{break-before:page;page-break-before:always}
+  .card .tariff-name,
+  .card .tariff-title,
+  .card .ablauf-label,
+  .card .ablauf-value{break-after:avoid;page-break-after:avoid}
+  .card .ablauf-value{font-size:14pt}
+  .card .row{font-size:9pt;padding:2px 0;
+    break-inside:avoid;page-break-inside:avoid}
+  .card .advisor{margin-top:3mm;padding-top:3mm;
+    break-inside:avoid;page-break-inside:avoid}
+
+  /* Tarifkarten-Kostendetails: im Druck immer offen anzeigen,
+     Summary (Aufklapper-Zeile) wird ausgeblendet. */
+  .card details.cost-detail{display:block;margin-top:3mm;padding-top:2mm;
+    border-top:0.4pt solid #999}
+  .card details.cost-detail > summary{display:none}
+  .card details.cost-detail > .cost-list{display:block !important}
+  .card .cost-list{margin-top:1mm;font-size:8.5pt}
+  .card .cost-list .item{padding:1.5mm 0;border-bottom:0.3pt solid #CCC;
+    break-inside:avoid;page-break-inside:avoid}
+  .card .cost-list .item:last-child{border-bottom:none}
+  .card .cost-list .item .name{display:block;margin-bottom:0.8mm}
+  .card .cost-list .item .name .title-text{font-weight:600;display:block}
+  .card .cost-list .item .name .rate{color:#444;font-weight:500;
+    font-variant-numeric:tabular-nums;display:block;font-size:8pt;margin-top:0.5mm}
+  .card .cost-list .item .desc{color:#444;font-size:8pt;line-height:1.4;margin-top:0}
+  .card .cost-list .item .desc strong{color:#1A1A1A;font-weight:600;white-space:nowrap}
+
+  /* Vergleichs-Block: eigene Seite nach den vier Tarifkarten,
+     ohne Rahmen um den Block */
+  .compare{padding:0;margin-bottom:6mm;border:none;border-radius:0;
+    box-shadow:none;break-inside:avoid;page-break-inside:avoid;
+    break-before:page;page-break-before:always}
+  .compare h2{font-size:13pt}
+  .compare .sub{font-size:9pt;margin-bottom:3mm}
+  .compare-grid{display:block;margin-bottom:3mm}
+  .compare-cell{padding:2mm 0;margin-bottom:2mm;background:none;
+    border:none;border-radius:0;break-inside:avoid;page-break-inside:avoid}
+  .compare-cell.diff,
+  .compare-cell.breakeven{background:none;border:none}
+  .compare-cell .lbl{font-size:8.5pt}
+  .compare-cell .val{font-size:13pt}
+  .compare-cell.breakeven .val{font-size:15pt}
+  .compare-advisor{display:block;font-size:9pt;padding-top:3mm}
+  .compare-advisor div{margin-bottom:2mm}
+
+  /* Charts werden im Druck nicht angezeigt – die Tarifkarten zeigen die
+     Kostenstruktur, die Berechnungsgrundlage am Ende fasst die Eingaben
+     zusammen. */
+  .charts{display:none}
+
+  /* Detail-Tabelle: nur wenn <details> geöffnet ist – Tabellenkopf wiederholt
+     sich auf Folgeseiten. 7-pt-Schrift, knappes Padding. */
+  .table-wrap{box-shadow:none;border:none;margin-bottom:6mm;break-inside:auto}
+  .table-wrap > details:not([open]){display:none}
+  .table-wrap > details[open]{border:none;border-radius:0;padding:0}
+  .table-wrap > details[open] > summary{display:none}
+  .tbl-tabs{display:none}                 /* Tabs sind interaktiv, weglassen */
+  .tbl-scroll{overflow:visible}           /* Scroll-Container im Druck flach */
+  table.detail{font-size:7pt;width:100%;border-collapse:collapse;table-layout:auto}
+  table.detail thead{display:table-header-group} /* Header pro Seite wiederholen */
+  table.detail tr{break-inside:avoid;page-break-inside:avoid}
+  table.detail th, table.detail td{
+    padding:2px 3px;font-size:7pt;border-bottom:0.4pt solid #BBB;
+    font-variant-numeric:tabular-nums
+  }
+  table.detail th{
+    position:static;background:#F2F2F2;font-weight:600;color:#1A1A1A;
+    white-space:normal;line-height:1.2;vertical-align:bottom;font-size:6.8pt
+  }
+  table.detail th:first-child, table.detail td:first-child{
+    text-align:left;width:11mm;white-space:nowrap
+  }
+  /* Rumpfjahr-Marker: im Druck unter die Jahreszahl umbrechen, kleiner. */
+  table.detail .rump{
+    display:block;margin:1px 0 0 0;font-size:6pt;color:#666;font-weight:400
+  }
+
+  /* Hinweise zur Berechnung – im Druck immer aufgeklappt, eigene Seite ganz am Ende */
+  .hints{break-before:page;page-break-before:always;margin-bottom:0}
+  .hints details{background:none;border:none;border-radius:0;box-shadow:none;overflow:visible}
+  .hints summary{display:none}
+  .hints-body{padding:0;font-size:9.5pt;line-height:1.4;color:#1A1A1A}
+  .hints-body .hint-item{margin-top:5mm;padding-top:3mm;border-top:0.4pt solid #BBB;
+    break-inside:avoid;page-break-inside:avoid}
+  .hints-body .hint-item:first-child{margin-top:0;padding-top:0;border-top:none}
+  .hints-body strong,
+  .hints-body em{color:#1A1A1A}
+  .hints h2{font-size:13pt;margin-bottom:4mm}
+
+  /* Berechnungsgrundlage – ebenfalls einspaltig, eigene Seite */
+  .print-only{display:block}
+  .print-basis{break-before:page;page-break-before:always;padding:0;
+    border-top:0.4pt solid #1A1A1A;padding-top:6mm;margin-top:0}
+  .print-basis h2{font-size:13pt;margin-bottom:2mm}
+  .print-basis .sub{font-size:9pt;color:#444;margin-bottom:5mm}
+  .basis-grid{display:block;font-size:10pt}
+  .basis-grid .row{display:flex;justify-content:space-between;
+    border-bottom:0.4pt solid #BBB;padding:2mm 0;break-inside:avoid;page-break-inside:avoid}
+  .basis-grid .row .lbl{color:#444}
+  .basis-grid .row .val{font-weight:600;font-variant-numeric:tabular-nums}
+  .basis-grid .group-title{font-size:9pt;text-transform:uppercase;letter-spacing:.06em;
+    color:#444;margin:4mm 0 1mm 0;border-bottom:none;padding:0}
+  .basis-context{font-size:9pt;color:#333;margin-top:6mm;padding-top:3mm;
+    border-top:0.4pt solid #BBB;line-height:1.4}
+  .print-footer{margin-top:6mm;font-size:8pt;color:#666;text-align:right}
+
+  /* Banner / Validierungstexte im Druck nicht zeigen */
+  .banner{display:none}
+  /* Passwort-Gate gehört nicht ins PDF */
+  .auth-gate{display:none !important}
+}
+
+/* ===== Passwort-Gate =====
+   Einfacher Zugangsschutz: deckt die gesamte Seite ab, bis das richtige
+   Passwort eingegeben wurde. Hinweis: rein clientseitig – wer den
+   Quelltext öffnet, sieht das Passwort. Eignet sich nur als leichte
+   Zugangsbarriere für interne Nutzung. */
+.auth-gate{position:fixed;inset:0;z-index:1000;background:#fff;
+  display:flex;align-items:center;justify-content:center;padding:24px}
+.auth-card{width:100%;max-width:360px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow);padding:28px 28px 24px;text-align:center}
+.auth-card h2{font-size:20px;margin-bottom:6px;color:#C1003E}
+.auth-card p{font-size:13px;color:var(--text-muted);margin:0 0 18px}
+.auth-card form{display:flex;flex-direction:column;gap:10px}
+.auth-card input{padding:11px 12px;border:1px solid var(--line-strong);border-radius:6px;
+  font:inherit;font-size:14px;color:var(--text);background:#fff;outline:none;
+  transition:border-color .15s}
+.auth-card input:focus{border-color:#C1003E}
+.auth-card button{padding:11px 12px;background:#C1003E;border:1px solid #C1003E;
+  color:#fff;font:inherit;font-size:14px;font-weight:600;border-radius:6px;cursor:pointer;
+  transition:background .15s,border-color .15s}
+.auth-card button:hover{background:#9B0030;border-color:#9B0030}
+.auth-error{margin-top:10px;font-size:12.5px;color:var(--neg);min-height:16px}
+body.auth-locked{overflow:hidden}
+body.auth-locked > *:not(.auth-gate){visibility:hidden}
+</style>
+</head>
+<body class="auth-locked">
+
+<!-- Passwort-Gate – wird ausgeblendet, sobald das richtige Passwort eingegeben wurde.
+     Hinweis: Reine Frontend-Sperre, keine echte Zugriffssicherheit. -->
+<div class="auth-gate" id="auth-gate" role="dialog" aria-labelledby="auth-title" aria-modal="true">
+  <div class="auth-card">
+    <h2 id="auth-title">Tarifrechner FR10</h2>
+    <p>Bitte gib das Zugangspasswort ein, um den Rechner zu öffnen.</p>
+    <form id="auth-form" autocomplete="off">
+      <input id="auth-input" type="password" placeholder="Passwort"
+             autocomplete="off" autofocus aria-label="Passwort">
+      <button type="submit">Zugang freischalten</button>
+    </form>
+    <div class="auth-error" id="auth-error" role="alert"></div>
+  </div>
+</div>
+<script>
+/* Clientseitige Passwort-Sperre mit Hash-Vergleich (SHA-256).
+   Im Quelltext ist nur der Hash sichtbar, nicht das Passwort selbst.
+   Die Eingabe des Nutzers wird über die Web-Crypto-API gehasht und
+   gegen den hinterlegten Hash verglichen. */
+(function(){
+  // SHA-256-Hash des korrekten Passworts. Ohne das Passwort selbst zu
+  // kennen, kann man aus diesem Hash nicht (in vertretbarer Zeit) auf
+  // das Klartext-Passwort schließen.
+  const PASSWORT_HASH = "de7b51ab575da6641222dda4e82f85f8f5d32365cc4eb0220d399b903b791199";
+  const KEY = "fr10-auth-ok";
+  const gate = document.getElementById("auth-gate");
+  const form = document.getElementById("auth-form");
+  const input = document.getElementById("auth-input");
+  const errBox = document.getElementById("auth-error");
+
+  const unlock = () => {
+    document.body.classList.remove("auth-locked");
+    if(gate) gate.style.display = "none";
+  };
+
+  /* SHA-256 mit Web-Crypto. Liefert hex-String. Fällt bei fehlender
+     Crypto-API (sehr alte Browser) auf einen direkten String-Vergleich
+     zurück, der dann unweigerlich fehlschlägt – Passwort bleibt geheim. */
+  async function sha256Hex(text){
+    if(!(window.crypto && window.crypto.subtle)) return "";
+    const buf = new TextEncoder().encode(text);
+    const digest = await window.crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(digest))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  // Schon in dieser Browser-Session entsperrt? → direkt durchlassen.
+  try { if(sessionStorage.getItem(KEY) === "1"){ unlock(); return; } } catch(_){}
+
+  if(!form) return;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const eingabeHash = await sha256Hex(input.value);
+    if(eingabeHash && eingabeHash === PASSWORT_HASH){
+      try { sessionStorage.setItem(KEY, "1"); } catch(_){}
+      errBox.textContent = "";
+      unlock();
+    } else {
+      errBox.textContent = "Falsches Passwort.";
+      input.value = "";
+      input.focus();
+    }
+  });
+})();
+</script>
+
+<header class="app">
+  <div class="title">
+    <h1 style="color:#C1003E">Tarifrechner Fondsrente FR10</h1>
+  </div>
+  <div class="toolbar">
+    <button id="btn-print" type="button" title="Druckansicht">Drucken</button>
+    <button id="btn-reset" type="button" title="Eingaben zurücksetzen">Zurücksetzen</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- Eingaben -->
+  <aside class="inputs" aria-label="Eingaben">
+    <div class="section">
+      <h4>Vertrag</h4>
+      <div class="field" id="f-geburt">
+        <label for="geburt">Geburtsdatum
+          <span class="info" title="Aktuelles Alter wird zum heutigen Stichtag berechnet.">i</span>
+        </label>
+        <input id="geburt" type="date">
+      </div>
+      <div class="field" id="f-rente">
+        <label for="rente">Renteneintrittsalter
+          <span class="info" title="Muss größer als das aktuelle Alter sein.">i</span>
+        </label>
+        <input id="rente" type="number" min="18" max="90" step="1" value="67">
+      </div>
+      <div class="field" id="f-spar">
+        <label for="spar">Monatliche Sparrate (EUR)</label>
+        <input id="spar" type="number" min="0" step="10" value="100">
+      </div>
+      <div class="field" id="f-ein">
+        <label for="ein">Einmalbeitrag (EUR)
+          <span class="info" title="Wird als Zuzahlung in allen 4 Tarifen im Jahr 1 angelegt.">i</span>
+        </label>
+        <input id="ein" type="number" min="0" step="100" value="0">
+      </div>
+      <div class="field" id="f-rendite">
+        <label for="rendite">Wertentwicklung p.a. (%)</label>
+        <input id="rendite" type="number" min="-10" max="20" step="0.1" value="6.0">
+      </div>
+      <div class="field" id="f-ter">
+        <label for="ter">TER Fondskosten p.a. (%)
+          <span class="info" title="Total Expense Ratio des Fonds. Wird in allen vier Tarifen zusätzlich auf das Anfangsguthaben jedes Jahres angewendet und reduziert die Ablaufleistung.">i</span>
+        </label>
+        <input id="ter" type="number" min="0" max="5" step="0.01" value="0.20">
+      </div>
+    </div>
+
+    <div class="section">
+      <h4>Vergütung Vermittler</h4>
+      <div class="field" id="f-promille">
+        <label for="promille">Promille FR10 Abschluss
+          <span class="info" title="Abschlussprovision in Promille der BWS. 45 ‰ entspricht 4,5 % der BWS.">i</span>
+        </label>
+        <input id="promille" type="number" min="0" max="100" step="0.5" value="45">
+      </div>
+      <div class="field" id="f-bestand">
+        <label for="bestand">Bestandsprovision FR10 (% p.a. auf Beitrag)</label>
+        <input id="bestand" type="number" min="0" max="10" step="0.1" value="1.0">
+      </div>
+      <div class="field" id="f-honorar">
+        <label for="honorar">Einmaliges Honorar HFR10 (EUR)
+          <span class="info" title="Vom Kunden direkt an den Berater gezahlt – nicht aus dem Vertrag.">i</span>
+        </label>
+        <input id="honorar" type="number" min="0" step="100" value="0">
+      </div>
+      <div class="field" id="f-betreuung">
+        <label for="betreuung">Jährliches Betreuungshonorar HFR10 (EUR)
+          <span class="info" title="Wiederkehrende jährliche Vergütung des Beraters bei HFR10 – vom Kunden direkt aus dem Privatvermögen gezahlt, nicht aus dem Vertrag entnommen.">i</span>
+        </label>
+        <input id="betreuung" type="number" min="0" step="50" value="0">
+      </div>
+    </div>
+
+    <div class="section">
+      <h4>Berechnete Werte</h4>
+      <div class="small" id="info-laufzeit">Laufzeit: –</div>
+      <div class="small" id="info-bws">BWS: –</div>
+      <div class="small" id="info-beitragssumme">Eingezahlte Beiträge: –</div>
+      <div class="hint-box" role="note">
+        <strong>Hinweis:</strong> Zur Vereinfachung wird angenommen, dass der
+        Rentenbeginn auf den Geburtstag fällt (Geburtsdatum + Renteneintrittsalter).
+        Der bei der Angebotserstellung tatsächlich vereinbarte Rentenbeginn kann
+        davon abweichen.
+      </div>
+    </div>
+  </aside>
+
+  <!-- Ergebnisbereich -->
+  <main class="results">
+
+    <div id="banner-area"></div>
+
+    <!-- Tarif-Karten -->
+    <div class="cards" id="cards"></div>
+
+    <!-- Faire-Vergleich -->
+    <section class="compare" id="compare-block">
+      <h2>Honorar vs. Provision · HFR10 ↔ FR10</h2>
+      <div class="sub">Vergleich beider Wege bei gleicher Wertentwicklung. Im FR10-Szenario werden das gesparte einmalige Honorar als Einmalbeitrag und das gesparte Betreuungshonorar jährlich als wiederkehrende Zuzahlung in den FR10-Tarif eingebracht (jeweils 6 % Zuzahlungskosten).</div>
+
+      <div class="compare-grid">
+        <div class="compare-cell">
+          <div class="lbl">Endkapital Kunde HFR10</div>
+          <div class="val" id="cmp-hfr10">–</div>
+        </div>
+        <div class="compare-cell">
+          <div class="lbl">Endkapital Kunde FR10 + Honorar als Zuzahlung</div>
+          <div class="val" id="cmp-fr10honorar">–</div>
+        </div>
+        <div class="compare-cell diff" id="cmp-diff-cell">
+          <div class="lbl" id="cmp-diff-lbl">Differenz</div>
+          <div class="val" id="cmp-diff">–</div>
+        </div>
+      </div>
+
+      <div class="compare-grid" style="grid-template-columns:1fr">
+        <div class="compare-cell breakeven">
+          <div class="lbl">Break-Even-Honorar · ab diesem Honorar ist FR10+Zuzahlung günstiger</div>
+          <div class="val" id="cmp-breakeven">–</div>
+          <div class="small" id="cmp-breakeven-hint" style="margin-top:6px"></div>
+        </div>
+      </div>
+
+      <div class="compare-advisor">
+        <div><span class="lbl">Beratervergütung HFR10:</span><span class="val" id="cmp-adv-h">–</span></div>
+        <div><span class="lbl">Beratervergütung FR10 + Zuzahlung:</span><span class="val" id="cmp-adv-fr">–</span></div>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <div class="charts">
+      <div class="chart-box">
+        <h3>Ablaufleistung Kunde</h3>
+        <div class="chart-canvas"><canvas id="chart-ablauf"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Beratervergütung gesamt (Abschluss + Bestand)</h3>
+        <div class="chart-canvas"><canvas id="chart-vergutung"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Guthabenentwicklung über die Laufzeit</h3>
+        <div class="chart-canvas"><canvas id="chart-verlauf"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>HFR10 vs. FR10+Honorar – Break-Even-Kurve</h3>
+        <div class="chart-canvas"><canvas id="chart-breakeven"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Detail-Tabelle -->
+    <div class="table-wrap">
+      <details>
+        <summary>Jährliche Detailwerte anzeigen</summary>
+        <div class="tbl-tabs" id="tbl-tabs"></div>
+        <div class="tbl-scroll">
+          <table class="detail" id="tbl-detail"></table>
+        </div>
+      </details>
+    </div>
+
+    <!-- Berechnungsgrundlage – nur im Druck sichtbar, auf der letzten Seite -->
+    <section class="print-only print-basis" aria-hidden="true">
+      <h2>Berechnungsgrundlage</h2>
+      <div class="sub">Diese Werte wurden der Berechnung der Tarifvarianten zugrunde gelegt.</div>
+
+      <div class="basis-grid">
+        <div class="group-title">Vertrag</div>
+        <div class="row"><span class="lbl">Geburtsdatum</span><span class="val" id="pb-geburt">–</span></div>
+        <div class="row"><span class="lbl">Aktuelles Alter</span><span class="val" id="pb-alter">–</span></div>
+        <div class="row"><span class="lbl">Renteneintrittsalter</span><span class="val" id="pb-rente">–</span></div>
+        <div class="row"><span class="lbl">Laufzeit</span><span class="val" id="pb-laufzeit">–</span></div>
+        <div class="row"><span class="lbl">Monatliche Sparrate</span><span class="val" id="pb-spar">–</span></div>
+        <div class="row"><span class="lbl">Einmalbeitrag</span><span class="val" id="pb-ein">–</span></div>
+        <div class="row"><span class="lbl">Eingezahlte Beiträge gesamt</span><span class="val" id="pb-bsumme">–</span></div>
+        <div class="row"><span class="lbl">BWS (Bewertungssumme)</span><span class="val" id="pb-bws">–</span></div>
+
+        <div class="group-title">Wertentwicklung &amp; Fondskosten</div>
+        <div class="row"><span class="lbl">Angenommene Wertentwicklung p.a.</span><span class="val" id="pb-rendite">–</span></div>
+        <div class="row"><span class="lbl">TER Fondskosten p.a.</span><span class="val" id="pb-ter">–</span></div>
+        <div class="row"><span class="lbl">Netto-Wertentwicklung nach Fondskosten</span><span class="val" id="pb-nettorend">–</span></div>
+
+        <div class="group-title">Vergütung Vermittler</div>
+        <div class="row"><span class="lbl">Promille FR10 (Abschluss)</span><span class="val" id="pb-promille">–</span></div>
+        <div class="row"><span class="lbl">Bestandsprovision FR10 p.a.</span><span class="val" id="pb-bestand">–</span></div>
+        <div class="row"><span class="lbl">Honorar HFR10 (einmalig)</span><span class="val" id="pb-honorar">–</span></div>
+        <div class="row"><span class="lbl">Betreuungshonorar HFR10 p.a.</span><span class="val" id="pb-betreuung">–</span></div>
+      </div>
+
+      <div class="print-footer" id="pb-footer"></div>
+    </section>
+
+    <!-- Hinweise zur Berechnung – auf der Website aufklappbar, im Druck eigene Seite am Ende -->
+    <section class="hints">
+      <details id="hints-details">
+        <summary>Hinweise zur Berechnung</summary>
+        <h2 class="print-only">Hinweise zur Berechnung</h2>
+        <div class="hints-body">
+          <div class="hint-item">
+            <strong>Hinweis Rentenbeginn:</strong> Zur Vereinfachung wird angenommen, dass der Rentenbeginn
+            auf den Geburtstag fällt (Geburtsdatum + Renteneintrittsalter). Der bei der Angebotserstellung
+            tatsächlich vereinbarte Rentenbeginn kann davon abweichen und ist hier nicht abgebildet.
+          </div>
+          <div class="hint-item">
+            <strong>Hinweis Honorar vs. Provision:</strong> Im Vergleich wird angenommen, dass der Kunde
+            beim Honorartarif (HFR10) das einmalige Honorar und das jährliche Betreuungshonorar separat
+            aus dem Privatvermögen an den Berater zahlt – diese Beträge mindern <em>nicht</em> das
+            Endkapital des Vertrags. Im Provisions-Szenario legt der Kunde das gesparte einmalige Honorar
+            als Einmalbeitrag und das gesparte Betreuungshonorar Jahr für Jahr als wiederkehrende
+            Zuzahlung in den FR10-Tarif ein (jeweils 6 % Zuzahlungskosten, davon 4 % Vermittlerprovision).
+            <br><br>
+            <em>Effekt auf den Break-Even:</em> Ein laufendes Betreuungshonorar wirkt über die gesamte
+            Laufzeit. Bereits 100 € pro Jahr summieren sich bei z. B. 43 Jahren mit Zinseszins auf einen
+            FR10-Aufschlag von rund 22.000 €. Der nötige Einmal-Honorar-Break-Even sinkt dadurch deutlich,
+            weil ein großer Teil der Lücke zwischen Honorar- und Provisionstarif schon durch die
+            wiederkehrenden Zuzahlungen geschlossen wird.
+          </div>
+          <div class="hint-item">
+            <strong>Methodik:</strong> Schleife mit monatlich genauer Vertragslaufzeit – inklusive Rumpfjahr
+            bei nicht durch 12 teilbarer Restlaufzeit. Sparraten kommen am Anfang jedes Monats (BoP)
+            und wachsen mit (1+rendite)^(1/12). Anfangsguthaben und ggf. Einmalbeiträge wachsen über die
+            tatsächlichen Vertragsmonate. Am Jahresende werden alle Kosten vom Brutto-Endwert abgezogen:
+            beitragsbezogen (FR10: AVK 2,5 % der BWS, monatsgenau auf 60 Vertragsmonate verteilt,
+            Verwaltung 6,30 % in Jahr 1–5 / 8,30 % ab Jahr 6, 24 EUR Stückkosten; FB / FE / H:
+            36 EUR fixe Verwaltung) sowie guthabenbezogen (FR10 0,24 %, FB 1,10 %, FE 1,30 %, H 0,30 %)
+            und die TER-Fondskostenquote – jeweils auf das Anfangsguthaben des Jahres. BWS = monatliche
+            Sparrate × Vertragsmonate, gedeckelt auf 480 Monate (40 Jahre). Effektivkosten via IRR-Bisektion
+            gegen eine kostenfreie Vergleichsanlage mit identischem Beitragsmodell. Break-Even-Honorar:
+            numerische Bisektion über 0–200.000 EUR. Whitelabel-Tool ohne Beratungsempfehlung – alle Werte
+            sind Modellrechnungen.
+          </div>
+        </div>
+      </details>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* =====================================================================
+   TARIFE – zentrale Konstantendefinition
+   Alle prozentualen Werte als Anteile (0,063 = 6,30 %).
+   Fixe Stückkosten in EUR.
+   ===================================================================== */
+const TARIFE = {
+  FR10: {
+    id:"FR10",
+    label:"FR10 · Provisionstarif",
+    avkAnteil: 0.025,         // 2,5 % der BWS
+    avkJahre: 5,              // verteilt auf erste 5 Jahre
+    verwaltungJ1_5: 0.063,    // 6,30 % des Jahresbeitrags in Jahr 1–5
+    verwaltungAb6: 0.083,     // 8,30 % des Jahresbeitrags ab Jahr 6
+    stueckkostenJahr: 24.0,   // EUR fix p.a.
+    guthabenkostenPa: 0.0024, // 0,24 % auf Anfangsguthaben des Jahres
+    zuzahlungAVK: 0.04,       // 4 % AVK auf Zuzahlung (Vorrang Vermittler)
+    zuzahlungUebrige: 0.02,   // 2 % übrige Kosten auf Zuzahlung
+    bestandszuzahlung: 0.04   // 4 % der Zuzahlung als zusätzl. Vermittlerprovision
+  },
+  FBFR10: {
+    id:"FBFR10",
+    label:"FBFR10 · NAV-Tarif (0,8 %)",
+    fixVerwaltungJahr: 36.0,
+    guthabenkostenPa: 0.011,        // 1,10 %
+    guthabenkostenVerwaltung: 0.003,// 0,30 % an Gesellschaft
+    guthabenkostenBerater: 0.008    // 0,80 % an Vermittler
+  },
+  FEFR10: {
+    id:"FEFR10",
+    label:"FEFR10 · NAV-Tarif (1 %)",
+    fixVerwaltungJahr: 36.0,
+    guthabenkostenPa: 0.013,        // 1,30 %
+    guthabenkostenVerwaltung: 0.003,// 0,30 % an Gesellschaft
+    guthabenkostenBerater: 0.010    // 1,00 % an Vermittler
+  },
+  HFR10: {
+    id:"HFR10",
+    label:"HFR10 · Honorartarif",
+    fixVerwaltungJahr: 36.0,
+    guthabenkostenPa: 0.003         // 0,30 %, komplett Verwaltung
+  }
+};
+const BWS_MAX_JAHRE = 40;
+const BWS_MAX_MONATE = BWS_MAX_JAHRE * 12;   // 480 Monate Cap auf BWS
+
+/* =====================================================================
+   Hilfsfunktionen – Formatierung, Eingaben, localStorage
+   ===================================================================== */
+const fmtEUR = new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const fmtEUR2 = new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2});
+// NBSP ( ) zwischen Zahl und Einheit, damit „2,5 %", „45 ‰" etc. nie umbrechen.
+const fmtPct = (v,dig=2) => (v*100).toLocaleString("de-DE",{minimumFractionDigits:dig,maximumFractionDigits:dig}) + " %";
+const fmtNum = (v,dig=0) => v.toLocaleString("de-DE",{minimumFractionDigits:dig,maximumFractionDigits:dig});
+const fmtPromille = (v,dig=1) => v.toLocaleString("de-DE",{minimumFractionDigits:dig,maximumFractionDigits:dig}) + " ‰";
+
+const STORAGE_KEY = "fr10-rechner-v1";
+function saveInputs(state){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+function loadInputs(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||"null"); }catch(e){ return null; } }
+
+function alterAusGeburt(geburtIso){
+  if(!geburtIso) return null;
+  const g = new Date(geburtIso); if(isNaN(g)) return null;
+  const heute = new Date();
+  let a = heute.getFullYear() - g.getFullYear();
+  const m = heute.getMonth() - g.getMonth();
+  if(m < 0 || (m===0 && heute.getDate() < g.getDate())) a--;
+  return a;
+}
+
+/* Laufzeit in Monaten als Float – exakt zwischen heute und Rentenbeginn.
+   Rentenbeginn = Geburtsdatum + Renteneintrittsalter (Annahme: am Geburtstag).
+   Der vereinbarte Rentenbeginn aus der Angebotserstellung kann davon abweichen. */
+function laufzeitInMonaten(geburtIso, renteAlter){
+  if(!geburtIso || !renteAlter) return 0;
+  const g = new Date(geburtIso); if(isNaN(g)) return 0;
+  const heute = new Date();
+  const rentenbeginn = new Date(g.getFullYear() + renteAlter, g.getMonth(), g.getDate());
+  if(rentenbeginn <= heute) return 0;
+  // Tagegenaue Differenz in Monate umrechnen (durchschn. 30,4375 Tage/Monat).
+  const tage = (rentenbeginn - heute) / (1000 * 60 * 60 * 24);
+  return tage / (365.25 / 12);
+}
+
+/* =====================================================================
+   Berechnung pro Tarif – Schleife mit MONATSGENAUER Vertragslaufzeit
+   --------------------------------------------------------------------
+   Eingabe nMonate: tatsächliche Vertragslaufzeit in Monaten (Float).
+   Die Schleife läuft floor(nMonate/12) volle Jahre + ggf. ein Rumpfjahr,
+   in dem nur die Restmonate Beitrag, Verzinsung und anteilige Kosten
+   anfallen.
+   --------------------------------------------------------------------
+   Modell pro Iterationsjahr (mit anteil = monateImJahr/12):
+     1. Anfangsguthaben (+ Einmalbeitrag in Jahr 1) wachsen über
+        monateImJahr Monate mit Faktor (1 + rm)^monateImJahr.
+     2. BoP-Sparraten wachsen monatlich mit rm = (1 + rendite)^(1/12) − 1.
+     3. Daraus ergibt sich der Brutto-Endwert.
+     4. Am Jahresende werden alle Kosten abgezogen:
+        - AVK (FR10): monatsgenau auf 60 Vertragsmonate verteilt.
+        - Verwaltung (% am Beitrag) und Stück: skalieren mit anteil.
+        - Police-Guthabenkosten + TER: auf Anfangsguthaben × anteil.
+   --------------------------------------------------------------------
+   Beispiel FR10 (100 EUR/Mo, exakt 480 Monate = 40 Jahre, 7 %):
+     BWS              = 100 × 480 = 48.000 EUR
+     AVK pro Monat    = 48.000 × 2,5 % / 60 = 20 EUR
+     AVK p.a. J1-5    = 240 EUR (danach 0)
+     Verwaltung J1-5  = 1.200 × 6,30 % = 75,60 EUR
+     Verwaltung ab J6 = 1.200 × 8,30 % = 99,60 EUR
+     Stückkosten      = 24,00 EUR fix
+     Brutto-Endwert J1 = Σ 100 EUR/Mo BoP @ 7 % p.a. ≈ 1.244,95 EUR
+     Wert nach Kosten J1 ≈ 1.244,95 − 240 − 75,60 − 24 = 905,35 EUR
+   ===================================================================== */
+function berechneTarif(tarifId, nMonate, monatlich, einmal, rendite, opts){
+  opts = opts || {};
+  const t = TARIFE[tarifId];
+  const jahresbeitrag = monatlich * 12;
+  // BWS monatsgenau – auf 480 Monate (40 Jahre) Cap.
+  const bws = monatlich * Math.min(nMonate, BWS_MAX_MONATE);
+
+  let guthaben = 0;
+  let einzahlungenSumme = 0;
+  let abschlussSumme = 0;   // Vermittler: Cashflow Jahr 1 (FR10) bzw. Honorar (HFR10)
+  let bestandSumme = 0;     // Vermittler: über Laufzeit kumuliert
+  const jahre = [];
+
+  // Vermittler-Vorauszahlung FR10 im Jahr 1 (separat von AVK)
+  let advisorAbschlussJ1 = 0;
+  if(tarifId === "FR10"){
+    const promille = (opts.promille != null ? opts.promille : 45);
+    advisorAbschlussJ1 = bws * (promille / 1000);
+  }
+  if(tarifId === "HFR10"){
+    advisorAbschlussJ1 = (opts.honorar || 0);
+  }
+
+  // AVK monatsgenau: gesamte AVK / 60 Monate (= 5 Jahre × 12).
+  const avkMonateGesamt = (tarifId === "FR10") ? t.avkJahre * 12 : 0;
+  const avkProMonatFR10 = (tarifId === "FR10") ? bws * t.avkAnteil / avkMonateGesamt : 0;
+
+  // Anzahl Iterationen: volle Jahre + ggf. ein Rumpfjahr für Restmonate (< 12).
+  const vollJahre = Math.floor(nMonate / 12);
+  const rumpfMonate = nMonate - vollJahre * 12;
+  const hatRumpf = rumpfMonate > 0.005;         // Toleranz für Float-Rundung
+  const n = hatRumpf ? vollJahre + 1 : vollJahre;
+  const rm = Math.pow(1 + rendite, 1/12) - 1;
+
+  for(let j=1; j<=n; j++){
+    const istJ1 = (j === 1);
+    const istLetztesJahr = (j === n);
+    // Anzahl tatsächlicher Vertragsmonate in diesem Iterationsjahr.
+    const monateImJahr = (hatRumpf && istLetztesJahr) ? rumpfMonate : 12;
+    const anteil = monateImJahr / 12;            // 0…1, nur im Rumpfjahr < 1
+    // Vertragsmonate vor Beginn dieses Jahres – für AVK-Verteilung.
+    const monateVorJahr = (j - 1) * 12;
+    const monateBisJahresende = monateVorJahr + monateImJahr;
+
+    // Lump-sum-Zufluss in diesem Jahr: einmaliger Betrag im J1 + ggf. wiederkehrende
+    // jährliche Zuzahlung (FR10-Vergleichsfall: gespartes Betreuungshonorar wird
+    // jedes Jahr in den Provisionstarif eingebracht). Im Rumpfjahr anteilig.
+    const zuzahlungDiesesJahr = (tarifId === "FR10")
+      ? (opts.zuzahlungJahr || 0) * anteil
+      : 0;
+    const einmalbetragJahr = (istJ1 ? einmal : 0) + zuzahlungDiesesJahr;
+
+    const beitragJahr = monatlich * monateImJahr + einmalbetragJahr;
+    einzahlungenSumme += beitragJahr;
+
+    // Aufgeschlüsselte Beitragskosten – auch in die Detail-Tabelle übernommen.
+    let abschlusskosten = 0;       // AVK regulär + AVK auf Zuzahlung (FR10)
+    let verwaltungJaehrlich = 0;   // % am Beitrag (FR10) bzw. übrige 2 % auf Zuzahlung
+    let stueckkosten = 0;          // fixe EUR-Kosten p.a. an Gesellschaft
+
+    if(tarifId === "FR10"){
+      // AVK-Monate, die in dieses Iterationsjahr fallen (max. 60 Vertragsmonate insgesamt).
+      const avkMonateInDiesemJahr = Math.max(0,
+        Math.min(avkMonateGesamt, monateBisJahresende) - Math.min(avkMonateGesamt, monateVorJahr)
+      );
+      abschlusskosten = avkProMonatFR10 * avkMonateInDiesemJahr;
+      // Verwaltungskosten gestaffelt: 6,30 % in Jahr 1–5, danach 8,30 %.
+      const verwSatz = (j <= t.avkJahre) ? t.verwaltungJ1_5 : t.verwaltungAb6;
+      // Beitragsbezogene Kosten skalieren automatisch mit Beitrag, der im
+      // Rumpfjahr ohnehin nur die anteiligen Monate enthält.
+      verwaltungJaehrlich = monatlich * monateImJahr * verwSatz;
+      stueckkosten = t.stueckkostenJahr * anteil;
+      if(einmalbetragJahr > 0){
+        // 6 % Zuzahlungskosten auf jeden Lump-Sum-Zufluss (einmal + jährliche Zuzahlung).
+        abschlusskosten     += einmalbetragJahr * t.zuzahlungAVK;       // 4 % auf Zuzahlung
+        verwaltungJaehrlich += einmalbetragJahr * t.zuzahlungUebrige;   // 2 % übrige Kosten
+      }
+    } else {
+      // FBFR10 / FEFR10 / HFR10 – nur fixe Verwaltungskosten an Gesellschaft, anteilig.
+      stueckkosten = t.fixVerwaltungJahr * anteil;
+    }
+    const kostenBeitrag = abschlusskosten + verwaltungJaehrlich + stueckkosten;
+    let advisorAbschlussZuzahlung = 0;
+    if(tarifId === "FR10" && einmalbetragJahr > 0){
+      advisorAbschlussZuzahlung = einmalbetragJahr * t.bestandszuzahlung; // 4 % Vermittler
+    }
+
+    const guthabenStart = guthaben;
+    // Monatliche Verzinsung – im Rumpfjahr nur über monateImJahr Monate.
+    const wachstumsfaktor = Math.pow(1 + rm, monateImJahr);
+    const startGewachsen = (guthabenStart + einmalbetragJahr) * wachstumsfaktor;
+    let saldoMonatlich = 0;
+    const ganzeMonate = Math.floor(monateImJahr);
+    const restMonat = monateImJahr - ganzeMonate;
+    for(let m = 0; m < ganzeMonate; m++){
+      saldoMonatlich = (saldoMonatlich + monatlich) * (1 + rm);
+    }
+    if(restMonat > 0){
+      // Bruchteil eines Monats: anteilige Sparrate, anteiliges Wachstum.
+      saldoMonatlich = (saldoMonatlich + monatlich * restMonat) * (1 + rm * restMonat);
+    }
+    const bruttoEnd = startGewachsen + saldoMonatlich;
+    const wertzuwachs = bruttoEnd - guthabenStart - beitragJahr;
+
+    // Guthabenkosten und TER auf Anfangsguthaben – im Rumpfjahr anteilig.
+    const guthabenkosten = guthabenStart * t.guthabenkostenPa * anteil;
+    const terPa = (opts.terPa != null ? opts.terPa : 0);
+    const fondskosten = guthabenStart * terPa * anteil;
+
+    const guthabenEnd = bruttoEnd - kostenBeitrag - guthabenkosten - fondskosten;
+    guthaben = guthabenEnd;
+
+    // Beratervergütung pro Jahr
+    let advisorJahr = 0;
+    if(tarifId === "FR10"){
+      if(istJ1) advisorJahr += advisorAbschlussJ1; // Vorauszahlung
+      advisorJahr += advisorAbschlussZuzahlung;    // 4 % Zuzahlungs-Provision
+      const bestandSatz = (opts.bestandPa != null ? opts.bestandPa : 0.01);
+      // Bestand auf den tatsächlich gezahlten Beitrag in diesem Iterationsjahr.
+      const bestandJahr = monatlich * monateImJahr * bestandSatz;
+      advisorJahr += bestandJahr;
+      if(istJ1){
+        abschlussSumme += advisorAbschlussJ1 + advisorAbschlussZuzahlung;
+      } else {
+        // Wiederkehrende Zuzahlungs-Provision (Vergleichsfall mit jährlicher
+        // Zuzahlung) zählt nicht als Abschluss, sondern als laufende Vergütung.
+        bestandSumme += advisorAbschlussZuzahlung;
+      }
+      bestandSumme += bestandJahr;
+    } else if(tarifId === "FBFR10" || tarifId === "FEFR10"){
+      // Vermittleranteil der Guthabenkosten – auf Anfangsguthaben, anteilig im Rumpfjahr.
+      const bestandJahr = guthabenStart * t.guthabenkostenBerater * anteil;
+      bestandSumme += bestandJahr;
+      advisorJahr = bestandJahr;
+    } else if(tarifId === "HFR10"){
+      if(istJ1){ abschlussSumme += advisorAbschlussJ1; advisorJahr = advisorAbschlussJ1; }
+      // Jährliches Betreuungshonorar – wird vom Kunden direkt aus dem Privatvermögen
+      // gezahlt (nicht aus dem Vertrag) und ist Teil der laufenden Vermittlervergütung.
+      // Im Rumpfjahr nur anteilig.
+      const betreuung = (opts.betreuungJahr || 0) * anteil;
+      if(betreuung > 0){
+        bestandSumme += betreuung;
+        advisorJahr += betreuung;
+      }
+    }
+
+    jahre.push({
+      jahr:j, monateImJahr, monatlich, beitragJahr,
+      abschlusskosten, verwaltungJaehrlich, guthabenkosten, stueckkosten, fondskosten,
+      kostenBeitrag,
+      guthabenStart, wertzuwachs, bruttoEnd, guthabenEnd,
+      advisorJahr
+    });
+  }
+
+  const advisorTotal = abschlussSumme + bestandSumme;
+  const endguthaben = guthaben;
+  const wertzuwachs = endguthaben - einzahlungenSumme;
+
+  // Effektivkosten p.a.: r_eff so, dass kostenfreie Schleife mit r_eff exakt
+  // zum tatsächlichen Endguthaben führt → Effektivkosten = rendite − r_eff.
+  const reff = effektivIRR(nMonate, monatlich, einmal, endguthaben);
+  const effektivkosten = (reff == null) ? null : (rendite - reff);
+
+  return {
+    tarifId, jahre, endguthaben, einzahlungen:einzahlungenSumme,
+    wertzuwachs, abschluss:abschlussSumme, bestand:bestandSumme,
+    advisorTotal, effektivkosten, bws
+  };
+}
+
+/* IRR-Bisektion – kostenfreie Schleife mit Rate r_eff, gleicher Beitragsplan.
+   Sucht r_eff in [-0.5, 1.0] sodass FV(r_eff) = ziel.
+   Verwendet dasselbe monatliche Verzinsungsmodell wie die Hauptberechnung
+   (inkl. anteiligem Rumpfmonat), damit Effektivkosten = rendite − r_eff
+   korrekt aussagekräftig sind. */
+function effektivIRR(nMonate, monatlich, einmal, ziel){
+  if(nMonate <= 0) return null;
+  const ganzeMonate = Math.floor(nMonate);
+  const restMonat = nMonate - ganzeMonate;
+  const fv = (r) => {
+    const rm = Math.pow(1 + r, 1/12) - 1;
+    // Einmalbeitrag in Monat 0 → wächst nMonate Monate.
+    let g = einmal * Math.pow(1 + rm, nMonate);
+    // Monatliche Sparraten BoP über die ganzen Monate.
+    let saldoM = 0;
+    for(let m = 0; m < ganzeMonate; m++){
+      saldoM = (saldoM + monatlich) * (1 + rm);
+    }
+    if(restMonat > 0){
+      saldoM = (saldoM + monatlich * restMonat) * (1 + rm * restMonat);
+    }
+    return g + saldoM;
+  };
+  let lo = -0.5, hi = 1.0;
+  if(fv(hi) < ziel) return null;
+  if(fv(lo) > ziel) return null;
+  for(let i=0; i<80; i++){
+    const m = (lo+hi)/2;
+    const v = fv(m);
+    if(v < ziel) lo = m; else hi = m;
+    if(Math.abs(hi-lo) < 1e-7) break;
+  }
+  return (lo+hi)/2;
+}
+
+/* =====================================================================
+   Faire-Vergleich HFR10 ↔ FR10
+   - HFR10: Endkapital aus dem Vertrag (Honorar und Betreuungshonorar werden
+     separat aus dem Privatvermögen gezahlt und mindern das Endkapital nicht).
+   - FR10+Honorar: Endkapital FR10 mit dem im Honorartarif gesparten Honorar
+     als zusätzlicher Zuzahlung im Jahr 1 (6 % Zuzahlungskosten, davon 4 %
+     Vermittler).
+   - Break-Even: Honorar H, ab dem das FR10-Endkapital (mit H als Zuzahlung)
+     das HFR10-Endkapital übersteigt.
+   ===================================================================== */
+function fairerVergleich(nMonate, monatlich, einmal, rendite, opts, honorar){
+  const betreuungJahr = opts.betreuungJahr || 0;
+  const hRes = berechneTarif("HFR10", nMonate, monatlich, einmal, rendite,
+                              {honorar, betreuungJahr, terPa: opts.terPa});
+  // Im FR10-Szenario legt der Kunde im Vergleichsfall fairerweise das gesparte
+  // einmalige Honorar als Einmalbeitrag (zusätzlich zum eigenen Einmalbeitrag) und
+  // das gesparte Betreuungshonorar Jahr für Jahr als wiederkehrende Zuzahlung in
+  // den Provisionstarif ein. Beides verursacht jeweils 6 % Zuzahlungskosten.
+  const fRes = berechneTarif("FR10",  nMonate, monatlich, einmal + honorar, rendite,
+                              {promille: opts.promille, bestandPa: opts.bestandPa,
+                               terPa: opts.terPa, zuzahlungJahr: betreuungJahr});
+  // Honorar und Betreuungshonorar werden separat aus dem Privatvermögen
+  // des Kunden gezahlt und mindern NICHT das Endkapital des HFR10-Vertrags.
+  const betreuungKumul = betreuungJahr * (nMonate / 12);
+  return {
+    h: hRes,
+    f: fRes,
+    betreuungKumul,
+    netHKunde: hRes.endguthaben,
+    netFKunde: fRes.endguthaben,
+    advisorH: hRes.advisorTotal,                    // = Honorar + Betreuungshonorar kumuliert
+    advisorF: fRes.advisorTotal                     // FR10 inkl. 4 % auf Zuzahlung
+  };
+}
+
+function findeBreakEven(nMonate, monatlich, einmal, rendite, opts){
+  // f(H) = netFKunde(H) − netHKunde(H). Suche H mit f=0 in [0, 200.000].
+  // opts enthält promille, bestandPa, terPa.
+  const f = (H) => {
+    const c = fairerVergleich(nMonate, monatlich, einmal, rendite, opts, H);
+    return c.netFKunde - c.netHKunde;
+  };
+  let lo = 0, hi = 200000;
+  const fLo = f(lo), fHi = f(hi);
+  if(fLo === 0) return lo;
+  if(fLo * fHi > 0){
+    // Kein Vorzeichenwechsel → kein Break-Even im Bereich
+    return null;
+  }
+  for(let i=0; i<60; i++){
+    const m = (lo+hi)/2;
+    const fm = f(m);
+    if(fm === 0){ return m; }
+    if(fm * fLo < 0){ hi = m; } else { lo = m; }
+    if(hi - lo < 0.5) break;
+  }
+  return (lo+hi)/2;
+}
+
+/* =====================================================================
+   Eingaben einlesen + validieren
+   ===================================================================== */
+function leseEingaben(){
+  const geburt = document.getElementById("geburt").value;
+  const renteAlter = parseInt(document.getElementById("rente").value, 10);
+  const monatlich = parseFloat(document.getElementById("spar").value);
+  const einmal = parseFloat(document.getElementById("ein").value) || 0;
+  const renditePct = parseFloat(document.getElementById("rendite").value);
+  const terPct = parseFloat(document.getElementById("ter").value);
+  const promille = parseFloat(document.getElementById("promille").value);
+  const bestandPct = parseFloat(document.getElementById("bestand").value);
+  const honorar = parseFloat(document.getElementById("honorar").value) || 0;
+  const betreuungJahr = parseFloat(document.getElementById("betreuung").value) || 0;
+
+  const errs = [];
+  const alter = alterAusGeburt(geburt);
+  if(!geburt || alter == null) errs.push({field:"f-geburt", msg:"Bitte Geburtsdatum angeben."});
+  if(isNaN(renteAlter) || renteAlter <= 0) errs.push({field:"f-rente", msg:"Renteneintrittsalter erforderlich."});
+  if(alter != null && renteAlter <= alter) errs.push({field:"f-rente", msg:"Renteneintrittsalter muss größer als das aktuelle Alter sein."});
+  if(isNaN(monatlich) || monatlich < 0) errs.push({field:"f-spar", msg:"Sparrate muss ≥ 0 sein."});
+  if(einmal < 0) errs.push({field:"f-ein", msg:"Einmalbeitrag muss ≥ 0 sein."});
+  if(isNaN(renditePct)) errs.push({field:"f-rendite", msg:"Wertentwicklung erforderlich."});
+  if(isNaN(terPct) || terPct < 0) errs.push({field:"f-ter", msg:"TER ≥ 0 erforderlich."});
+  if(isNaN(promille) || promille < 0) errs.push({field:"f-promille", msg:"Promille-Wert ≥ 0."});
+  if(isNaN(bestandPct) || bestandPct < 0) errs.push({field:"f-bestand", msg:"Bestandsprovision ≥ 0."});
+  if(honorar < 0) errs.push({field:"f-honorar", msg:"Honorar ≥ 0."});
+  if(betreuungJahr < 0) errs.push({field:"f-betreuung", msg:"Betreuungshonorar ≥ 0."});
+
+  const nMonate = laufzeitInMonaten(geburt, renteAlter);
+  return {
+    raw:{geburt, renteAlter, monatlich, einmal, renditePct, terPct, promille, bestandPct, honorar, betreuungJahr},
+    valid: errs.length===0,
+    errs,
+    nMonate,
+    n: nMonate / 12,                              // Laufzeit in Jahren als Float
+    monatlich, einmal, rendite: renditePct/100, promille, bestandPa: bestandPct/100,
+    terPa: (isNaN(terPct) ? 0 : terPct/100), honorar, betreuungJahr,
+    alter
+  };
+}
+
+/* =====================================================================
+   Rendering – Karten, Vergleichsblock, Charts, Tabelle
+   ===================================================================== */
+let chartObjs = {};
+
+function renderAlles(){
+  const e = leseEingaben();
+  saveInputs(e.raw);
+
+  // Validierungsbanner
+  const banner = document.getElementById("banner-area");
+  document.querySelectorAll(".field").forEach(f => f.classList.remove("invalid"));
+  if(!e.valid){
+    e.errs.forEach(x => {
+      const el = document.getElementById(x.field);
+      if(el){ el.classList.add("invalid"); let h = el.querySelector(".hint"); if(!h){ h=document.createElement("div"); h.className="hint"; el.appendChild(h);} h.textContent = x.msg; }
+    });
+    banner.innerHTML = '<div class="banner">' + e.errs.map(x=>x.msg).join(" · ") + '</div>';
+    document.getElementById("info-laufzeit").textContent = "Laufzeit: –";
+    document.getElementById("info-bws").textContent = "BWS: –";
+    document.getElementById("info-beitragssumme").textContent = "Eingezahlte Beiträge: –";
+    return;
+  } else {
+    banner.innerHTML = "";
+    document.querySelectorAll(".field .hint").forEach(h => h.textContent = "");
+  }
+
+  // Kontext-Infos – Laufzeit monatsgenau anzeigen.
+  const bws = e.monatlich * Math.min(e.nMonate, BWS_MAX_MONATE);
+  const lzJ = Math.floor(e.nMonate / 12);
+  const lzM = Math.round(e.nMonate - lzJ * 12);
+  const lzText = `${lzJ} Jahre${lzM > 0 ? `, ${lzM} Monate` : ""}`;
+  document.getElementById("info-laufzeit").textContent =
+    `Laufzeit: ${lzText} · Alter ${e.alter} → Rente ${e.raw.renteAlter}`;
+  document.getElementById("info-bws").textContent =
+    `BWS: ${fmtEUR.format(bws)}` + (e.nMonate > BWS_MAX_MONATE ? " (auf 40 Jahre begrenzt)" : "");
+  const beitragssumme = e.monatlich * e.nMonate + e.einmal;
+  document.getElementById("info-beitragssumme").textContent = `Eingezahlte Beiträge: ${fmtEUR.format(beitragssumme)}`;
+
+  // Berechnungen pro Tarif – jetzt mit monatsgenauer Laufzeit.
+  const opts = {promille: e.promille, bestandPa: e.bestandPa, honorar: e.honorar,
+                betreuungJahr: e.betreuungJahr, terPa: e.terPa};
+  const ergebnisse = {
+    FR10:    berechneTarif("FR10",    e.nMonate, e.monatlich, e.einmal, e.rendite, opts),
+    FBFR10:  berechneTarif("FBFR10",  e.nMonate, e.monatlich, e.einmal, e.rendite, opts),
+    FEFR10:  berechneTarif("FEFR10",  e.nMonate, e.monatlich, e.einmal, e.rendite, opts),
+    HFR10:   berechneTarif("HFR10",   e.nMonate, e.monatlich, e.einmal, e.rendite, opts)
+  };
+
+  renderKarten(ergebnisse, e);
+  renderVergleich(e, ergebnisse);
+  renderCharts(e, ergebnisse);
+  renderTabelle(ergebnisse);
+  renderPrintBasis(e, beitragssumme, bws);
+}
+
+/* Print-Berechnungsgrundlage – sichtbar nur in der Druckansicht. */
+function renderPrintBasis(e, beitragssumme, bws){
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  const dateFmt = e.raw.geburt ? new Date(e.raw.geburt).toLocaleDateString("de-DE") : "–";
+  set("pb-geburt", dateFmt);
+  set("pb-alter", e.alter != null ? `${e.alter} Jahre` : "–");
+  set("pb-rente", `${e.raw.renteAlter} Jahre`);
+  const lzJ = Math.floor(e.nMonate / 12);
+  const lzM = Math.round(e.nMonate - lzJ * 12);
+  const lzText = `${lzJ} Jahre${lzM > 0 ? `, ${lzM} Monate` : ""}`;
+  set("pb-laufzeit", lzText + (e.nMonate > BWS_MAX_MONATE ? "  ·  BWS auf 40 Jahre begrenzt" : ""));
+  set("pb-spar", fmtEUR.format(e.monatlich));
+  set("pb-ein", fmtEUR.format(e.einmal));
+  set("pb-bsumme", fmtEUR.format(beitragssumme));
+  set("pb-bws", fmtEUR.format(bws));
+  set("pb-rendite", fmtPct(e.rendite, 2));
+  set("pb-ter", fmtPct(e.terPa, 2));
+  set("pb-nettorend", fmtPct(e.rendite - e.terPa, 2));
+  set("pb-promille", `${fmtPromille(e.promille,1)}  ·  ${fmtPct(e.promille/1000, 2)} der BWS`);
+  set("pb-bestand", fmtPct(e.bestandPa, 2) + " auf Jahresbeitrag");
+  set("pb-honorar", fmtEUR.format(e.honorar));
+  set("pb-betreuung", fmtEUR.format(e.betreuungJahr));
+  const heute = new Date().toLocaleDateString("de-DE");
+  set("pb-footer", `Erstellt am ${heute}  ·  Tarifrechner Fondsrente FR10  ·  Modellrechnung, keine verbindliche Tarifaussage`);
+}
+
+function renderKarten(R, e){
+  const cards = document.getElementById("cards");
+  const order = ["FR10","FBFR10","FEFR10","HFR10"];
+  cards.innerHTML = order.map(id => {
+    const r = R[id];
+    const t = TARIFE[id];
+    const eff = (r.effektivkosten == null) ? "–" : fmtPct(r.effektivkosten, 2);
+    return `
+    <div class="card" data-tarif="${id}">
+      <div class="tariff-name">${id}</div>
+      <div class="tariff-title">${t.label.split("·")[1] ? t.label.split("·")[1].trim() : t.label}</div>
+      <div class="ablauf-label">Ablaufleistung Kunde</div>
+      <div class="ablauf-value">${fmtEUR.format(r.endguthaben)}</div>
+      <div class="row"><span class="lbl">Eingezahlt gesamt</span><span class="val">${fmtEUR.format(r.einzahlungen)}</span></div>
+      <div class="row"><span class="lbl">Wertzuwachs</span><span class="val">${fmtEUR.format(r.wertzuwachs)}</span></div>
+      <div class="row"><span class="lbl">Effektivkosten p.a.</span><span class="val">${eff}</span></div>
+      <div class="advisor">
+        <h4>Beratervergütung</h4>
+        <div class="row"><span class="lbl">Abschluss / Honorar (J1)</span><span class="val">${fmtEUR.format(r.abschluss)}</span></div>
+        <div class="row"><span class="lbl">Bestand kumuliert</span><span class="val">${fmtEUR.format(r.bestand)}</span></div>
+        <div class="row total"><span class="lbl">Gesamt</span><span class="val">${fmtEUR.format(r.advisorTotal)}</span></div>
+      </div>
+      ${kostenstrukturHtml(id, e, r)}
+    </div>`;
+  }).join("");
+}
+
+/* Kostenstruktur als aufklappbares <details> – konkrete Werte mit aktuellen
+   Eingaben (BWS, Jahresbeitrag, TER) für maximale Transparenz. */
+function kostenstrukturHtml(id, e, r){
+  const items = [];
+  const t = TARIFE[id];
+  const jb = e.monatlich * 12;
+  const bws = e.monatlich * Math.min(e.nMonate, BWS_MAX_MONATE);
+  const fmtRate = (s) => `<span class="rate">${s}</span>`;
+
+  if(id === "FR10"){
+    const avkMonate = t.avkJahre * 12;
+    const avkProMonat = bws * t.avkAnteil / avkMonate;
+    const avkJahr = avkProMonat * 12;
+    items.push({
+      name: "Abschluss- und Vertriebskosten (AVK)",
+      rate: `${fmtPct(t.avkAnteil,1)} der BWS · monatsgenau über ${avkMonate} Vertragsmonate`,
+      desc: `BWS = ${fmtEUR2.format(bws)} → <strong>${fmtEUR2.format(avkProMonat)}</strong> pro Vertragsmonat in den ersten ${t.avkJahre} Jahren ≙ <strong>${fmtEUR2.format(avkJahr)}</strong> in einem vollen Jahr, danach 0 EUR.`
+    });
+    items.push({
+      name: "Jährliche Verwaltungskosten",
+      rate: `${fmtPct(t.verwaltungJ1_5,2)} (J1–5) · ${fmtPct(t.verwaltungAb6,2)} (ab J6)`,
+      desc: `Bei aktuellem Jahresbeitrag von ${fmtEUR2.format(jb)}: <strong>${fmtEUR2.format(jb*t.verwaltungJ1_5)}</strong> p.a. in Jahr 1–5, danach <strong>${fmtEUR2.format(jb*t.verwaltungAb6)}</strong> p.a.`
+    });
+    items.push({
+      name: "Stückkosten",
+      rate: `${fmtEUR2.format(t.stueckkostenJahr)} fix p.a.`,
+      desc: `Unabhängig von der Sparrate, durchgehend über die gesamte Laufzeit.`
+    });
+    items.push({
+      name: "Guthabenabhängige Verwaltungskosten",
+      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a.`,
+      desc: `Auf das Anfangsguthaben des Jahres. Komplett an Gesellschaft (keine Beratervergütung über das Guthaben).`
+    });
+    items.push({
+      name: "Fondskosten (TER)",
+      rate: `${fmtPct(e.terPa,2)} p.a.`,
+      desc: `Auf das Anfangsguthaben des Jahres. Reduziert die Wertentwicklung netto.`
+    });
+    items.push({
+      name: "Zuzahlung / Einmalbeitrag",
+      rate: `6,00 % einmalig (4 % AVK + 2 % übrige)`,
+      desc: `Auf jeden Einmalbeitrag bzw. jede Zuzahlung – einmalig im Jahr der Einzahlung. 4 % davon zusätzlich als Vermittlerprovision.`
+    });
+    items.push({
+      name: "Beratervergütung Abschluss",
+      rate: `${fmtPromille(e.promille,1)} der BWS · ${fmtPct(e.promille/1000,2)} der BWS`,
+      desc: `BWS = ${fmtEUR2.format(bws)} → Vorauszahlung Jahr 1 = <strong>${fmtEUR2.format(bws*e.promille/1000)}</strong>. Stornohaftung 5 Jahre.`
+    });
+    items.push({
+      name: "Beratervergütung Bestand",
+      rate: `${fmtPct(e.bestandPa,2)} p.a. auf den Jahresbeitrag`,
+      desc: `Pro Jahr ${fmtEUR2.format(jb*e.bestandPa)} (NICHT auf das Fondsguthaben). Kumuliert über die gesamte Laufzeit.`
+    });
+  }
+  else if(id === "FBFR10" || id === "FEFR10"){
+    items.push({
+      name: "Abschlusskosten (AVK)",
+      rate: "keine",
+      desc: "Keine Abschlusskosten. Auch auf Zuzahlungen fällt keine AVK an."
+    });
+    items.push({
+      name: "Jährliche Verwaltungskosten",
+      rate: `${fmtEUR2.format(t.fixVerwaltungJahr)} fix p.a.`,
+      desc: "Konstanter EUR-Betrag an die Gesellschaft, unabhängig von der Sparrate."
+    });
+    items.push({
+      name: "Guthabenabhängige Verwaltungskosten",
+      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a.`,
+      desc: `Auf das Anfangsguthaben des Jahres. Davon ${fmtPct(t.guthabenkostenVerwaltung,2)} Verwaltung an Gesellschaft, ${fmtPct(t.guthabenkostenBerater,2)} Beratervergütung an Vermittler.`
+    });
+    items.push({
+      name: "Fondskosten (TER)",
+      rate: `${fmtPct(e.terPa,2)} p.a.`,
+      desc: `Auf das Anfangsguthaben des Jahres.`
+    });
+    items.push({
+      name: "Beratervergütung",
+      rate: `${fmtPct(t.guthabenkostenBerater,2)} p.a. auf das Fondsguthaben`,
+      desc: "Bestandsvergütung läuft über die gesamte Vertragslaufzeit – keine Vorauszahlung. Steigt mit wachsendem Guthaben."
+    });
+  }
+  else if(id === "HFR10"){
+    items.push({
+      name: "Abschlusskosten (AVK)",
+      rate: "keine",
+      desc: "Honorartarif: keine AVK auf laufende Beiträge oder Zuzahlungen."
+    });
+    items.push({
+      name: "Jährliche Verwaltungskosten",
+      rate: `${fmtEUR2.format(t.fixVerwaltungJahr)} fix p.a.`,
+      desc: "Konstanter EUR-Betrag an die Gesellschaft."
+    });
+    items.push({
+      name: "Guthabenabhängige Verwaltungskosten",
+      rate: `${fmtPct(t.guthabenkostenPa,2)} p.a.`,
+      desc: "Auf das Anfangsguthaben des Jahres – komplett Verwaltung an Gesellschaft."
+    });
+    items.push({
+      name: "Fondskosten (TER)",
+      rate: `${fmtPct(e.terPa,2)} p.a.`,
+      desc: `Auf das Anfangsguthaben des Jahres.`
+    });
+    items.push({
+      name: "Beratervergütung Abschluss",
+      rate: `${fmtEUR2.format(e.honorar)} einmalig`,
+      desc: "Wird vom Kunden direkt aus dem Privatvermögen an den Berater gezahlt – nicht aus dem Vertrag entnommen."
+    });
+    if(e.betreuungJahr > 0){
+      const betreuungKumul = e.betreuungJahr * (e.nMonate / 12);
+      items.push({
+        name: "Beratervergütung Bestand (Betreuungshonorar)",
+        rate: `${fmtEUR2.format(e.betreuungJahr)} p.a.`,
+        desc: `Wiederkehrendes Honorar pro Vertragsjahr – ebenfalls aus dem Privatvermögen. Über die Laufzeit kumuliert: <strong>${fmtEUR2.format(betreuungKumul)}</strong>.`
+      });
+    }
+  }
+
+  const lis = items.map(it => `
+    <div class="item">
+      <div class="name"><span class="title-text">${it.name}</span>${fmtRate(it.rate)}</div>
+      <div class="desc">${it.desc}</div>
+    </div>`).join("");
+  return `
+    <details class="cost-detail">
+      <summary>Kostenstruktur · Berechnungsgrundlage</summary>
+      <div class="cost-list">${lis}</div>
+    </details>`;
+}
+
+function renderVergleich(e, R){
+  const honorar = e.honorar;
+  const cmp = fairerVergleich(e.nMonate, e.monatlich, e.einmal, e.rendite,
+                              {promille:e.promille, bestandPa:e.bestandPa, terPa:e.terPa,
+                               betreuungJahr:e.betreuungJahr}, honorar);
+
+  document.getElementById("cmp-hfr10").textContent = fmtEUR.format(cmp.netHKunde);
+  document.getElementById("cmp-fr10honorar").textContent = fmtEUR.format(cmp.netFKunde);
+
+  const diff = cmp.netHKunde - cmp.netFKunde; // positiv → HFR10 vorne
+  const diffCell = document.getElementById("cmp-diff-cell");
+  const diffLbl = document.getElementById("cmp-diff-lbl");
+  diffCell.classList.remove("neg");
+  if(diff >= 0){
+    diffLbl.textContent = "Vorteil HFR10";
+    document.getElementById("cmp-diff").textContent = "+ " + fmtEUR.format(diff);
+  } else {
+    diffLbl.textContent = "Vorteil FR10 + Zuzahlung";
+    diffCell.classList.add("neg");
+    document.getElementById("cmp-diff").textContent = "− " + fmtEUR.format(Math.abs(diff));
+  }
+
+  document.getElementById("cmp-adv-h").textContent = fmtEUR.format(cmp.advisorH);
+  document.getElementById("cmp-adv-fr").textContent = fmtEUR.format(cmp.advisorF);
+
+  const be = findeBreakEven(e.nMonate, e.monatlich, e.einmal, e.rendite,
+                            {promille:e.promille, bestandPa:e.bestandPa, terPa:e.terPa,
+                             betreuungJahr:e.betreuungJahr});
+  const beEl = document.getElementById("cmp-breakeven");
+  const hint = document.getElementById("cmp-breakeven-hint");
+  if(be == null){
+    beEl.textContent = "–";
+    hint.textContent = "Im Bereich 0 bis 200.000 EUR kein eindeutiger Break-Even gefunden.";
+  } else {
+    beEl.textContent = fmtEUR.format(be);
+    hint.textContent = `Bis zu einem Honorar von ${fmtEUR.format(be)} ist die HFR10 für den Kunden günstiger als die FR10 mit Honorar als Zuzahlung.`;
+  }
+}
+
+/* ===== Charts ===== */
+function makeChart(id, type, data, options){
+  if(chartObjs[id]){ chartObjs[id].destroy(); }
+  const ctx = document.getElementById(id).getContext("2d");
+  chartObjs[id] = new Chart(ctx, {type, data, options});
+  return chartObjs[id];
+}
+
+const COLOR = {
+  customer:"#C1003E",
+  customerSoft:"#F4A0B5",
+  advisor:"#7A0028",
+  advisorSoft:"#D85577",
+  warm:"#E14068",
+  grid:"#1A1A1A",
+  series:["#C1003E","#7A0028","#E14068","#F4A0B5"],
+  axis:"#2A2A2A",
+  line:"#E5E5E5"
+};
+
+const baseChartOpts = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{
+    legend:{labels:{color:COLOR.axis, font:{size:11}}},
+    tooltip:{
+      backgroundColor:"#1A1A1A", titleColor:"#fff", bodyColor:"#fff",
+      callbacks:{ label:(ctx)=>`${ctx.dataset.label || ""}: ${fmtEUR.format(ctx.parsed.y || ctx.parsed)}` }
+    }
+  },
+  scales:{
+    x:{ticks:{color:COLOR.axis,font:{size:11}}, grid:{color:COLOR.line}},
+    y:{ticks:{color:COLOR.axis,font:{size:11}, callback:v=>fmtEUR.format(v)}, grid:{color:COLOR.line}}
+  }
+};
+
+function renderCharts(e, R){
+  const order = ["FR10","FBFR10","FEFR10","HFR10"];
+  const labels = order;
+
+  // 1) Ablaufleistung Kunde
+  makeChart("chart-ablauf","bar",{
+    labels,
+    datasets:[{
+      label:"Ablaufleistung",
+      data: order.map(id => R[id].endguthaben),
+      backgroundColor: order.map((_,i)=> COLOR.series[i]),
+      borderRadius:4
+    }]
+  }, {...baseChartOpts, plugins:{...baseChartOpts.plugins, legend:{display:false}}});
+
+  // 2) Beratervergütung gestapelt (Abschluss + Bestand)
+  makeChart("chart-vergutung","bar",{
+    labels,
+    datasets:[
+      {label:"Abschluss / Honorar", data:order.map(id=>R[id].abschluss), backgroundColor:COLOR.advisor, borderRadius:4},
+      {label:"Bestand kumuliert",    data:order.map(id=>R[id].bestand),    backgroundColor:COLOR.advisorSoft, borderRadius:4}
+    ]
+  }, {...baseChartOpts,
+      scales:{
+        x:{...baseChartOpts.scales.x, stacked:true},
+        y:{...baseChartOpts.scales.y, stacked:true}
+      }});
+
+  // 3) Guthabenverlauf über Jahre
+  const xJahre = R.FR10.jahre.map(j=>j.jahr);
+  makeChart("chart-verlauf","line",{
+    labels:xJahre,
+    datasets: order.map((id,i) => ({
+      label: id,
+      data: R[id].jahre.map(j=>j.guthabenEnd),
+      borderColor: COLOR.series[i],
+      backgroundColor: COLOR.series[i] + "22",
+      tension:.2, pointRadius:0, borderWidth:2
+    }))
+  }, {...baseChartOpts,
+      scales:{
+        x:{...baseChartOpts.scales.x, title:{display:true,text:"Jahr",color:COLOR.axis}},
+        y:baseChartOpts.scales.y
+      }});
+
+  // 4) Break-Even-Kurve: HFR10 vs. FR10+Honorar als Funktion des Honorars
+  const hMax = 10000;
+  const steps = 50;
+  const xs = [], yH = [], yF = [];
+  for(let k=0;k<=steps;k++){
+    const H = hMax*k/steps;
+    const c = fairerVergleich(e.nMonate, e.monatlich, e.einmal, e.rendite,
+                              {promille:e.promille, bestandPa:e.bestandPa, terPa:e.terPa,
+                               betreuungJahr:e.betreuungJahr}, H);
+    xs.push(H); yH.push(c.netHKunde); yF.push(c.netFKunde);
+  }
+  makeChart("chart-breakeven","line",{
+    labels: xs.map(x=>fmtEUR.format(x)),
+    datasets:[
+      {label:"HFR10", data:yH, borderColor:COLOR.customer, backgroundColor:"transparent", borderWidth:2, tension:.1, pointRadius:0},
+      {label:"FR10 + Honorar als Zuzahlung", data:yF, borderColor:COLOR.advisor, backgroundColor:"transparent", borderWidth:2, tension:.1, pointRadius:0}
+    ]
+  }, {...baseChartOpts,
+      scales:{
+        x:{...baseChartOpts.scales.x, title:{display:true,text:"Honorar",color:COLOR.axis}, ticks:{...baseChartOpts.scales.x.ticks, maxTicksLimit:8}},
+        y:baseChartOpts.scales.y
+      }});
+}
+
+/* ===== Detail-Tabelle ===== */
+let aktiverTabellenTarif = "FR10";
+function renderTabelle(R){
+  const tabs = document.getElementById("tbl-tabs");
+  const order = ["FR10","FBFR10","FEFR10","HFR10"];
+  tabs.innerHTML = order.map(id =>
+    `<button data-tab="${id}" class="${id===aktiverTabellenTarif?"active":""}">${id}</button>`
+  ).join("");
+  tabs.querySelectorAll("button").forEach(b => b.onclick = () => {
+    aktiverTabellenTarif = b.dataset.tab; renderTabelle(R);
+  });
+
+  const r = R[aktiverTabellenTarif];
+  const tbl = document.getElementById("tbl-detail");
+  tbl.innerHTML =
+    `<thead><tr>
+       <th>Jahr</th>
+       <th>Wert Jahresanfang</th>
+       <th>Monatl. Beitrag</th>
+       <th>Einzahlung p.a.</th>
+       <th>Abschlusskosten</th>
+       <th>Jährl. Verwaltungskosten</th>
+       <th>Guthabenabh. Verwaltungskosten</th>
+       <th>Stückkosten</th>
+       <th>Wertzuwachs</th>
+       <th>Wert Jahresende</th>
+       <th>Wert Jahresende nach Kosten</th>
+     </tr></thead><tbody>` +
+    r.jahre.map(j => `
+      <tr>
+        <td>${j.jahr}${j.monateImJahr < 12 ? ` <span class="rump">(${fmtNum(j.monateImJahr,1)} Mo.)</span>` : ""}</td>
+        <td>${fmtEUR2.format(j.guthabenStart)}</td>
+        <td>${fmtEUR2.format(j.monatlich)}</td>
+        <td>${fmtEUR2.format(j.beitragJahr)}</td>
+        <td>${fmtEUR2.format(j.abschlusskosten)}</td>
+        <td>${fmtEUR2.format(j.verwaltungJaehrlich)}</td>
+        <td>${fmtEUR2.format(j.guthabenkosten)}</td>
+        <td>${fmtEUR2.format(j.stueckkosten)}</td>
+        <td>${fmtEUR2.format(j.wertzuwachs)}</td>
+        <td>${fmtEUR2.format(j.bruttoEnd)}</td>
+        <td>${fmtEUR2.format(j.guthabenEnd)}</td>
+      </tr>`).join("") +
+    `</tbody>`;
+}
+
+/* =====================================================================
+   Init – Listener, localStorage, Toolbar
+   ===================================================================== */
+function setIfNotEmpty(id, v){ if(v != null && v !== "") document.getElementById(id).value = v; }
+
+function initFromStorage(){
+  const s = loadInputs();
+  if(!s) return;
+  setIfNotEmpty("geburt",   s.geburt);
+  setIfNotEmpty("rente",    s.renteAlter);
+  setIfNotEmpty("spar",     s.monatlich);
+  setIfNotEmpty("ein",      s.einmal);
+  setIfNotEmpty("rendite",  s.renditePct);
+  setIfNotEmpty("ter",      s.terPct);
+  setIfNotEmpty("promille", s.promille);
+  setIfNotEmpty("bestand",  s.bestandPct);
+  setIfNotEmpty("honorar",  s.honorar);
+  setIfNotEmpty("betreuung",s.betreuungJahr);
+}
+
+function initListeners(){
+  ["geburt","rente","spar","ein","rendite","ter","promille","bestand","honorar","betreuung"]
+    .forEach(id => document.getElementById(id).addEventListener("input", renderAlles));
+
+  document.getElementById("btn-print").onclick = () => window.print();
+
+  // Chart.js zeichnet sein Canvas anhand der Bildschirmgröße. Beim Druck
+  // ändert sich die Container-Breite – ohne expliziten resize() bleiben
+  // Charts in Originalgröße und überlaufen die Druckseite. Vor jedem
+  // Druckvorgang erzwingen wir einen Resize, damit alles in den neuen
+  // Container (ggf. 1-Spalten-Layout im Hochformat) passt.
+  const resizeCharts = () => {
+    Object.values(chartObjs).forEach(c => { if(c && typeof c.resize === "function") c.resize(); });
+  };
+  // Vor dem Druck: Kostenstruktur-<details> in jeder Tarifkarte und die
+  // Hinweise-Sektion aufklappen, damit Inhalt im PDF sichtbar ist (CSS allein
+  // wird vom UA-Stylesheet teils überschrieben). Ursprünglicher Zustand wird
+  // nach dem Druck wiederhergestellt.
+  let detailsState = [];
+  const openCostDetails = () => {
+    detailsState = [];
+    document.querySelectorAll(".card details.cost-detail, .hints details").forEach(d => {
+      detailsState.push({el:d, wasOpen:d.open});
+      d.open = true;
+    });
+  };
+  const restoreCostDetails = () => {
+    detailsState.forEach(({el, wasOpen}) => { el.open = wasOpen; });
+    detailsState = [];
+  };
+  window.addEventListener("beforeprint", () => { openCostDetails(); resizeCharts(); });
+  window.addEventListener("afterprint", restoreCostDetails);
+  // Safari/Firefox: matchMedia print – zusätzliche Sicherung.
+  if(window.matchMedia){
+    const mq = window.matchMedia("print");
+    if(mq.addEventListener) mq.addEventListener("change", (e) => {
+      if(e.matches){ openCostDetails(); resizeCharts(); }
+      else { restoreCostDetails(); }
+    });
+  }
+  window.addEventListener("afterprint", resizeCharts);
+  document.getElementById("btn-reset").onclick = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    document.getElementById("geburt").value    = "";
+    document.getElementById("rente").value     = 67;
+    document.getElementById("spar").value      = 100;
+    document.getElementById("ein").value       = 0;
+    document.getElementById("rendite").value   = 6;
+    document.getElementById("ter").value       = 0.20;
+    document.getElementById("promille").value  = 45;
+    document.getElementById("bestand").value   = 1;
+    document.getElementById("honorar").value   = 0;
+    document.getElementById("betreuung").value = 0;
+    renderAlles();
+  };
+}
+
+initFromStorage();
+initListeners();
+renderAlles();
+</script>
+</body>
+</html>
