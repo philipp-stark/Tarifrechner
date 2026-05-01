@@ -426,13 +426,21 @@ body.auth-locked > *:not(.auth-gate){visibility:hidden}
 /* Clientseitige Passwort-Sperre mit Hash-Vergleich (SHA-256).
    Im Quelltext ist nur der Hash sichtbar, nicht das Passwort selbst.
    Die Eingabe des Nutzers wird über die Web-Crypto-API gehasht und
-   gegen den hinterlegten Hash verglichen. */
+   gegen den hinterlegten Hash verglichen.
+
+   Bei jedem Seiten-Load wird:
+   1. der gespeicherte Login-Status verworfen (Passwort-Gate erscheint)
+   2. die persistierten Eingabewerte zurückgesetzt (Frische Eingabemaske) */
 (function(){
   // SHA-256-Hash des korrekten Passworts. Ohne das Passwort selbst zu
   // kennen, kann man aus diesem Hash nicht (in vertretbarer Zeit) auf
   // das Klartext-Passwort schließen.
   const PASSWORT_HASH = "de7b51ab575da6641222dda4e82f85f8f5d32365cc4eb0220d399b903b791199";
-  const KEY = "fr10-auth-ok";
+  // Bei jedem Page-Load werden Auth-Status und gespeicherte Eingaben gelöscht,
+  // sodass Passwortabfrage erscheint und Werte auf Default zurückgesetzt sind.
+  try { sessionStorage.removeItem("fr10-auth-ok"); } catch(_){}
+  try { localStorage.removeItem("fr10-rechner-v1"); } catch(_){}
+
   const gate = document.getElementById("auth-gate");
   const form = document.getElementById("auth-form");
   const input = document.getElementById("auth-input");
@@ -455,15 +463,13 @@ body.auth-locked > *:not(.auth-gate){visibility:hidden}
       .join("");
   }
 
-  // Schon in dieser Browser-Session entsperrt? → direkt durchlassen.
-  try { if(sessionStorage.getItem(KEY) === "1"){ unlock(); return; } } catch(_){}
-
   if(!form) return;
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const eingabeHash = await sha256Hex(input.value);
     if(eingabeHash && eingabeHash === PASSWORT_HASH){
-      try { sessionStorage.setItem(KEY, "1"); } catch(_){}
+      // Bewusst kein sessionStorage-Flag mehr: Bei jedem Page-Load soll
+      // erneut das Passwort eingegeben werden.
       errBox.textContent = "";
       // Tastatur einklappen + Fokus weg vom Input, damit iOS-Safari nicht
       // die Scroll-Position des fokussierten Felds beibehält.
