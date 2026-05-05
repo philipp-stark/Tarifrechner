@@ -339,31 +339,50 @@ table.detail .rump{color:var(--text-muted);font-size:11px;font-weight:400;margin
      zusammen. */
   .charts{display:none}
 
-  /* Detail-Tabelle: nur wenn <details> geöffnet ist – Tabellenkopf wiederholt
-     sich auf Folgeseiten. 7-pt-Schrift, knappes Padding. */
-  .table-wrap{box-shadow:none;border:none;margin-bottom:6mm;break-inside:auto}
-  .table-wrap > details:not([open]){display:none}
-  .table-wrap > details[open]{border:none;border-radius:0;padding:0}
-  .table-wrap > details[open] > summary{display:none}
-  .tbl-tabs{display:none}                 /* Tabs sind interaktiv, weglassen */
-  .tbl-scroll{overflow:visible}           /* Scroll-Container im Druck flach */
-  table.detail{font-size:7pt;width:100%;border-collapse:collapse;table-layout:auto}
-  table.detail thead{display:table-header-group} /* Header pro Seite wiederholen */
-  table.detail tr{break-inside:avoid;page-break-inside:avoid}
-  table.detail th, table.detail td{
-    padding:2px 3px;font-size:7pt;border-bottom:0.4pt solid #BBB;
-    font-variant-numeric:tabular-nums
+  /* On-Screen-Detailtabelle (mit Tab-Wechsler) im Druck ausblenden – im PDF
+     erscheinen stattdessen die vollständigen Druck-Tabellen unten, jeweils
+     im Querformat auf eigener Seite. */
+  .table-wrap{display:none !important}
+
+  /* Druck-Detailtabellen: pro Tarif eine eigene A4-Hochformat-Seite. Mit elf
+     Spalten (ohne "Monatl. Beitrag") und 6,5-pt-Schrift passen alle Werte in
+     die ~170 mm Inhaltsbreite, ohne dass Zahlen am Spaltenrand abgeschnitten
+     werden. */
+  .print-detail-tables{display:block;margin:0;padding:0}
+  .print-detail-tarif{
+    break-before:page;page-break-before:always;
+    break-inside:auto;
+    padding:0;margin:0
   }
-  table.detail th{
-    position:static;background:#F2F2F2;font-weight:600;color:#1A1A1A;
-    white-space:normal;line-height:1.2;vertical-align:bottom;font-size:6.8pt
+  .print-detail-tarif h2{
+    font-size:12pt;margin:0 0 1mm 0;color:#1A1A1A;
+    break-after:avoid;page-break-after:avoid
   }
-  table.detail th:first-child, table.detail td:first-child{
-    text-align:left;width:11mm;white-space:nowrap
+  .print-detail-tarif .print-detail-sub{
+    font-size:8.5pt;color:#444;margin:0 0 3mm 0;
+    break-after:avoid;page-break-after:avoid
   }
-  /* Rumpfjahr-Marker: im Druck unter die Jahreszahl umbrechen, kleiner. */
-  table.detail .rump{
-    display:block;margin:1px 0 0 0;font-size:6pt;color:#666;font-weight:400
+  table.detail.print-detail{
+    width:100%;table-layout:fixed;border-collapse:collapse;
+    font-size:5.5pt;font-variant-numeric:tabular-nums
+  }
+  table.detail.print-detail thead{display:table-header-group}
+  table.detail.print-detail tr{break-inside:avoid;page-break-inside:avoid}
+  table.detail.print-detail th,
+  table.detail.print-detail td{
+    padding:0.7mm 0.6mm;border-bottom:0.4pt solid #BBB;
+    text-align:right;white-space:nowrap;overflow:hidden
+  }
+  table.detail.print-detail th{
+    background:#F2F2F2;font-weight:600;color:#1A1A1A;
+    white-space:normal;line-height:1.2;vertical-align:bottom;font-size:5.3pt
+  }
+  table.detail.print-detail th:first-child,
+  table.detail.print-detail td:first-child{
+    text-align:left;white-space:nowrap
+  }
+  table.detail.print-detail .rump{
+    display:block;margin:0.3mm 0 0 0;font-size:4.8pt;color:#666;font-weight:400
   }
 
   /* Hinweise zur Berechnung – im Druck immer aufgeklappt, eigene Seite am Ende.
@@ -685,6 +704,11 @@ body.auth-locked > *:not(.auth-gate){visibility:hidden}
         </div>
       </details>
     </div>
+
+    <!-- Druckansicht: alle vier Tarife mit jährlichen Detailwerten, jeweils auf
+         eigener Querformat-Seite. Wird in renderPrintTabellen() aus den
+         berechneten Tarif-Ergebnissen aufgebaut und ist nur im Druck sichtbar. -->
+    <section class="print-only print-detail-tables" id="print-detail-tables" aria-hidden="true"></section>
 
     <!-- Berechnungsgrundlage – nur im Druck sichtbar, auf der letzten Seite -->
     <section class="print-only print-basis" aria-hidden="true">
@@ -1486,6 +1510,7 @@ function renderAlles(){
   renderVergleich(e, ergebnisse);
   renderCharts(e, ergebnisse);
   renderTabelle(ergebnisse);
+  renderPrintTabellen(ergebnisse);
   renderPrintBasis(e, beitragssumme, bws);
 }
 
@@ -1837,6 +1862,7 @@ function renderTabelle(R){
        <th>Abschlusskosten</th>
        <th>Jährl. Verwaltungskosten</th>
        <th>Guthabenabh. Verwaltungskosten</th>
+       <th>Fondskosten (TER)</th>
        <th>Stückkosten</th>
        <th>Wertzuwachs</th>
        <th>Wert Jahresende</th>
@@ -1851,12 +1877,85 @@ function renderTabelle(R){
         <td>${fmtEUR2.format(j.abschlusskosten)}</td>
         <td>${fmtEUR2.format(j.verwaltungJaehrlich)}</td>
         <td>${fmtEUR2.format(j.guthabenkosten)}</td>
+        <td>${fmtEUR2.format(j.fondskosten)}</td>
         <td>${fmtEUR2.format(j.stueckkosten)}</td>
         <td>${fmtEUR2.format(j.wertzuwachs)}</td>
         <td>${fmtEUR2.format(j.bruttoEnd)}</td>
         <td>${fmtEUR2.format(j.guthabenEnd)}</td>
       </tr>`).join("") +
     `</tbody>`;
+}
+
+/* Druckansicht: jährliche Detailwerte für ALLE Tarife. Pro Tarif eine eigene
+   Querformat-Seite (siehe @page detailtable im Print-CSS). Im Browser ist
+   der Container per .print-only ausgeblendet. Spaltenbreiten werden über ein
+   <colgroup> gesetzt, damit die Tabelle bei jeder Datenlage in die ~269 mm
+   Inhaltsbreite eines A4-Querformats passt. */
+function renderPrintTabellen(R){
+  const cont = document.getElementById("print-detail-tables");
+  if(!cont) return;
+  const order = ["FR10","FBFR10","FEFR10","HFR10"];
+  // Spaltenbreiten in % – abgestimmt auf A4 hoch (~170 mm Inhaltsbreite) und
+  // 6,5-pt-Schrift, sodass auch sechsstellige Eurobeträge nicht abgeschnitten
+  // werden.
+  const colgroup = `
+    <colgroup>
+      <col style="width:6%">
+      <col style="width:10.5%">
+      <col style="width:8%">
+      <col style="width:8%">
+      <col style="width:8.5%">
+      <col style="width:9%">
+      <col style="width:7.5%">
+      <col style="width:7%">
+      <col style="width:10%">
+      <col style="width:11.5%">
+      <col style="width:14%">
+    </colgroup>`;
+  const thead = `
+    <thead><tr>
+      <th>Jahr</th>
+      <th>Wert Jahres&shy;anfang</th>
+      <th>Einzahlung p.a.</th>
+      <th>Abschluss&shy;kosten</th>
+      <th>Jährl. Verwal&shy;tungs&shy;kosten</th>
+      <th>Gutha&shy;ben&shy;abh. Verwal&shy;tungs&shy;kosten</th>
+      <th>Fonds&shy;kosten (TER)</th>
+      <th>Stück&shy;kosten</th>
+      <th>Wert&shy;zuwachs</th>
+      <th>Wert Jahres&shy;ende</th>
+      <th>Wert Jahres&shy;ende nach Kosten</th>
+    </tr></thead>`;
+  cont.innerHTML = order.map(id => {
+    const r = R[id];
+    const t = TARIFE[id];
+    if(!r || !r.jahre || !t) return "";
+    const titel = t.label.includes("·") ? t.label.split("·")[1].trim() : t.label;
+    const rows = r.jahre.map(j => `
+      <tr>
+        <td>${j.jahr}${j.monateImJahr < 12 ? ` <span class="rump">(${fmtNum(j.monateImJahr,1)} Mo.)</span>` : ""}</td>
+        <td>${fmtEUR2.format(j.guthabenStart)}</td>
+        <td>${fmtEUR2.format(j.beitragJahr)}</td>
+        <td>${fmtEUR2.format(j.abschlusskosten)}</td>
+        <td>${fmtEUR2.format(j.verwaltungJaehrlich)}</td>
+        <td>${fmtEUR2.format(j.guthabenkosten)}</td>
+        <td>${fmtEUR2.format(j.fondskosten)}</td>
+        <td>${fmtEUR2.format(j.stueckkosten)}</td>
+        <td>${fmtEUR2.format(j.wertzuwachs)}</td>
+        <td>${fmtEUR2.format(j.bruttoEnd)}</td>
+        <td>${fmtEUR2.format(j.guthabenEnd)}</td>
+      </tr>`).join("");
+    return `
+      <section class="print-detail-tarif">
+        <h2>${id} – Jährliche Detailwerte</h2>
+        <div class="print-detail-sub">${titel}</div>
+        <table class="detail print-detail">
+          ${colgroup}
+          ${thead}
+          <tbody>${rows}</tbody>
+        </table>
+      </section>`;
+  }).join("");
 }
 
 /* =====================================================================
